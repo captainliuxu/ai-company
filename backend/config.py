@@ -1,0 +1,32 @@
+"""Application configuration."""
+
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
+
+# Database
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{DATA_DIR}/app.db")
+
+# AI API (Gemini via proxy)
+AI_API_KEY = os.getenv("AI_API_KEY", "sk-0911458ab01b4411a0d75ce02f77b0e6")
+AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.deepseek.com/anthropic")
+AI_MODEL = os.getenv("AI_MODEL", "deepseek-v4-pro")
+
+# Embedding
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+EMBEDDING_DIM = 384
+
+# RAG
+RAG_TOP_K = 5
+RAG_SIMILARITY_THRESHOLD = 0.3
+
+# Memory
+MAX_MEMORIES_PER_SESSION = 200
+
+# Summary
+SUMMARY_TRIGGER_ROUNDS = 20
+
+# Chat
+MAX_CONTEXT_MESSAGES = 20

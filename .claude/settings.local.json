@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(python *)",
+      "PowerShell(python *)",
+      "PowerShell(pip *)",
+      "PowerShell(Get-ChildItem *)",
+      "WebSearch(*)",
+      "WebFetch(*)"
+    ]
+  }
+}
