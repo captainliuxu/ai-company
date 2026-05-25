@@ -9,10 +9,11 @@ DATA_DIR = BASE_DIR / "data"
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{DATA_DIR}/app.db")
 
-# AI API (Gemini via proxy)
-AI_API_KEY = os.getenv("AI_API_KEY", "sk-0911458ab01b4411a0d75ce02f77b0e6")
-AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.deepseek.com/anthropic")
-AI_MODEL = os.getenv("AI_MODEL", "deepseek-v4-pro")
+# AI Companion — Gemini via api.xykjy.com proxy (OpenAI SDK compatible)
+# 敏感值通过 .env 文件配置，参见 .env.example
+AI_API_KEY = os.getenv("AI_API_KEY", "")
+AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.xykjy.com")
+AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash")
 
 # Embedding
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"

@@ -88,7 +88,7 @@ backend/
 | 数据库 | SQLite | 零配置、单文件、足够 Demo 使用 |
 | 向量存储 | SQLite BLOB | 避免引入 ChromaDB 等外部依赖 |
 | 流式输出 | SSE | 比 WebSocket 简单，够用 |
-| AI SDK | OpenAI SDK | 兼容 Gemini proxy (api.xykjy.com) |
+| AI SDK | OpenAI SDK | 项目 AI 伴侣 = Gemini via proxy (api.xykjy.com) |
 | Embedding | all-MiniLM-L6-v2 | 384维轻量，本地运行，不需要 GPU |
 
 ## [FUTURE] Extensibility
