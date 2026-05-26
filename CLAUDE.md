@@ -1,7 +1,7 @@
 # AI Companion Pro Demo
 
 > **开发入口：`PROJECT_PLAN.md`** — 所有开发活动严格按 Phase 0→8 顺序执行。
-> **Agent 流水线：`docs/AGENT_RULES.md`** — 三段式流水线（DeepSeek → GLM → Claude）。
+> **Agent 流水线：`docs/AGENT_RULES.md`** — 二段式流水线（Dev 3 Agent → Review 3 轮递进审查）。
 > **任务看板：`docs/TASK_BOARD.md`** · **问题日志：`docs/ISSUES_LOG.md`**
 
 ## ⚠️ 自动化执行（全局强制）
@@ -35,12 +35,12 @@ YOLO 模式下：
 本会话中的 Claude 角色是 **Orchestrator**：
 
 - **Claude** → TASK 拆分 · 调度 1~3 Agent 并行 · Merge 决策 · Schema/架构控制
-- **DeepSeek Team**（强制 3 Agent）→ 每个 Agent 独立执行 1 个 TASK · YOLO · 文件隔离 · 完成即停止
-- **GLM** → 代码审查 · Bug 检查 · 浏览器真实验收 · 写 ISSUES_LOG
+- **DeepSeek Dev Team**（强制 3 Agent）→ 每个 Agent 独立执行 1 个 TASK · YOLO · 文件隔离 · 完成即停止
+- **DeepSeek Review Team**（强制 1~3 Agent）→ 3 轮递进审查（静态 → 运行时 → 浏览器 E2E 强制验收）· 写 ISSUES_LOG
 
 **Claude 不写业务代码、不做 UI debug、不做具体 bug 修复。**
 
-> 核心哲学：DeepSeek 负责"做"，GLM 负责"查"，Claude 负责"决定"。
+> 核心哲学：DeepSeek 负责"做"和"查"，Claude 负责"决定"。
 > 这是一条 **"无对话 AI 工程流水线"**。
 
 ## Project Identity
@@ -58,7 +58,7 @@ YOLO 模式下：
 | Backend | FastAPI + SQLAlchemy + SQLite |
 | Embedding | sentence-transformers (all-MiniLM-L6-v2) |
 | AI Companion | Gemini (via api.xykjy.com OpenAI SDK compatible proxy) |
-| Dev Agent | DeepSeek + GLM（国产大模型，负责代码开发/审查） |
+| Dev Agent | DeepSeek（国产大模型，负责代码开发 + 审查验收） |
 | Frontend | Next.js + TailwindCSS + shadcn/ui |
 
 **禁止引入**：ChromaDB、Redis、Docker、K8s、微服务、WebSocket、LangGraph、Android/Kotlin

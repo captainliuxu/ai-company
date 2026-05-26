@@ -1,6 +1,6 @@
 # AGENT RULES — 多 Agent 串行开发流水线
 
-> **本项目采用严格的三段式 Agent 流水线。所有 Agent 必须遵守本文档。**
+> **本项目采用严格的二段式 Agent 流水线。所有 Agent 必须遵守本文档。**
 
 ---
 
@@ -8,7 +8,7 @@
 
 ### 1. 默认 `--dangerously-skip-permissions`
 
-**所有 Agent（DeepSeek / GLM）默认以 `claude --dangerously-skip-permissions` 模式运行。**
+**所有 DeepSeek Agent 默认以 `claude --dangerously-skip-permissions` 模式运行。**
 - 执行任何命令不得询问用户权限
 - 文件读写、目录创建、命令执行全部静默通过
 - Claude（Orchestrator）在启动 Agent 时必须明确告知此模式
@@ -29,27 +29,18 @@ Skill 不加载 = 行为边界未定义 = 执行结果无效。
 - Skill 路径（项目）：`E:\ai-companion\.claude\skills\terminal-autonomous-execution\SKILL.md`
 - 加载方式：使用 Skill 工具 invoke，参数为 skill 名称
 
-#### GLM（验收 — Phase B）
-
-| Skill | 来源 | 优先级 |
-|-------|------|:--:|
-| `terminal-autonomous-execution` | 项目 | MUST |
-| `code-review` | 内置 | MUST |
-| `verify` | 内置 | SHOULD |
-| `agent-browser` | 内置 | SHOULD |
-
-- `code-review`（内置）：提供系统化的 security/performance/maintainability/correctness/testing 审查模式
-- `verify`（内置）：运行 app 真实验证代码是否工作
-- `agent-browser`（内置）：headless 浏览器自动化测试
-
-#### DeepSeek（Code-Review — Phase B2）
+#### DeepSeek（Review — Phase B）
 
 | Skill | 来源 | 优先级 |
 |-------|------|:--:|
 | `terminal-autonomous-execution` | 项目 | MUST |
 | `code-review` | 项目 | MUST |
+| `verify` | 内置 | SHOULD |
+| `agent-browser` | 内置 | SHOULD |
 
-- Skill 路径（项目 code-review）：`E:\ai-companion\.claude\skills\code-review\SKILL.md`
+- `code-review`（项目）：交叉审查清单（路径：`E:\ai-companion\.claude\skills\code-review\SKILL.md`）
+- `verify`（内置）：运行 app 真实验证代码是否工作
+- `agent-browser`（内置）：headless 浏览器自动化测试
 
 #### 核心行为原则（所有 skill 的共同要求）
 
@@ -64,7 +55,7 @@ Skill 不加载 = 行为边界未定义 = 执行结果无效。
 ## 核心目标
 
 ```
-DeepSeek（开发） → GLM（验收/审查） → DeepSeek（Code-Review） → Claude（最终审查 + 调度）
+DeepSeek Dev Team（开发） → DeepSeek Review Team（验收/审查） → Claude（最终审查 + 调度）
 ```
 
 所有 Agent：
@@ -150,106 +141,190 @@ STATUS: DONE
 并且：
 - 停止执行
 - 不再继续修改代码
-- 等待 GLM 阶段
+- 等待 DeepSeek Review 阶段
 
 ---
 
-## Phase B：GLM Team（验收 + 审查阶段 — 最多 3 Agent 并行）
+## Phase B：DeepSeek Review Team（3 轮递进审查 + 浏览器强制验收 — 1~3 Agent 并行）
+
+> **DeepSeek Dev 完成后，由独立的 DeepSeek Review Agent 进行 3 轮递进审查。**
+> **三轮全部 PASS 才算通过。任意一轮 FAIL 则整体 FAILED。**
+> **浏览器验收为第 3 轮，强制执行，不可跳过。**
 
 ### Step 0：Skill 加载（最先执行，不可跳过）
 
 Agent 启动后，**在读取任何文件之前**，必须 invoke 以下 skill：
 1. `terminal-autonomous-execution` — 安全自主执行规则
-2. `code-review`（内置）— 系统化代码审查模式（security/performance/maintainability/correctness/testing）
-3. `verify`（内置，可选）— 运行 app 验证代码真伪
-4. `agent-browser`（内置，可选）— 浏览器自动化验收
+2. `code-review`（项目）— 交叉审查清单（路径：`E:\ai-companion\.claude\skills\code-review\SKILL.md`）
+3. `verify`（内置，强制）— 运行 app 验证代码真伪
+4. `agent-browser`（内置，强制）— 浏览器自动化验收
 
 ```
 → invoke terminal-autonomous-execution
 → invoke code-review
-→ （按需 invoke verify / agent-browser）
+→ invoke verify
+→ invoke agent-browser
 → 然后才能开始验收流程
 ```
 
-未加载 skill 的 Agent 产出无效。
+未加载 skill 的 Agent 产出无效。**`verify` 和 `agent-browser` 为强制加载，不可跳过。**
 
 ### 团队规模
 
-Claude 可以根据 DeepSeek 产出的 TASK 数量启动 **1~3 个 GLM Agent 并行验收**：
+Claude 可以根据 DeepSeek Dev 产出的 TASK 数量启动 **1~3 个 DeepSeek Review Agent 并行验收**：
 - 每个 Agent 验收 1 个独立 TASK
 - TASK 之间无依赖 → 并行 Review
+- **核心约束：Review Agent 不得审查自己参与开发的 TASK（交叉审查）**
 - 不同 TASK 涉及的文件不重叠 → 并行检查互不干扰
 
 ### 职责
 
-GLM Agent 只负责：
-- 验收分配的 DeepSeek TASK 输出
-- Code Review
-- Bug 检查
-- 架构一致性检查
-- 文档同步检查
-- UI/接口一致性检查
+DeepSeek Review Agent 负责：
+- 验收分配的 Dev TASK 输出
+- **第 1 轮：静态代码审查**（代码质量、bug、安全、架构一致性）
+- **第 2 轮：运行时验证**（启动后端，测试所有 API）
+- **第 3 轮：浏览器端到端验收**（打开浏览器，模拟真实用户流程，强制）
+- **只读审查，不修改代码**
+- 三轮全部 PASS 才可输出最终 PASSED
 
 ### 强制规则
 
 **❌ 禁止：**
+- 修改代码（只读审查）
 - 修改功能范围
 - 新增需求
 - 替代实现
 - 问用户问题
 - 修改其他 Agent 负责验收的 TASK 代码
+- 审查自己参与开发的 TASK
 
-### 验收流程（必须按顺序执行）
+**✅ 必须：**
+- 加载 `code-review` Skill（项目路径：`E:\ai-companion\.claude\skills\code-review\SKILL.md`）
+- 加载 `verify` + `agent-browser` Skill（强制，不可跳过）
+- 执行三轮递进审查（静态 → 运行时 → 浏览器）
+- 每轮输出明确的 PASS/FAIL 结果
+- 引用具体文件和行号
+- 结构化输出
+- 浏览器验收截图留证
 
-**1️⃣ 代码检查**
-- 是否符合 TASK 范围
-- 是否越权修改文件
-- 是否破坏现有结构
+### 验收流程：三轮递进审查（必须按顺序执行）
 
-**2️⃣ 逻辑检查**
-- 是否存在 bug
-- 是否有边界问题
-- 是否存在空值/异常处理缺失
+#### 🔴 第 1 轮：静态代码审查 (Static Code Analysis)
 
-**3️⃣ 架构检查**
-- API 是否一致
-- DB schema 是否一致
-- Prompt 是否一致
+**只读审查，不运行任何程序。**
 
-**4️⃣ 工具验收（强制）**
+审查项：
+1. **TASK 范围检查** — 是否越权修改文件？是否触碰了禁止修改的代码？
+2. **代码质量** — 未使用的 import、死代码、变量命名、重复代码
+3. **逻辑正确性** — 是否存在 bug？边界条件处理？空值/异常处理完整？
+4. **安全性** — SQL 注入、命令注入、SSE 注入风险？流式处理中断处理？
+5. **架构一致性** — API 响应格式是否一致？DB schema 是否合理？代码风格是否统一？
+6. **联动影响** — 是否破坏了已有路由/模块？已有 API 是否仍正常？
 
-GLM 必须使用浏览器工具 / 前端运行环境进行真实验证：
-- 打开页面
-- 点击交互
-- 测试 API 请求
-- 验证 UI 是否正常
-- 验证流式输出是否正常
+**输出格式：**
+```
+=== ROUND 1: STATIC ANALYSIS ===
+STATUS: PASS-ROUND-1 / FAIL-ROUND-1
 
-### 验收通过输出
+[若 FAIL，列出问题]:
+- [严重级别] 文件:行号 — 问题描述 + 影响范围
+- ...
 
+[若 PASS，简述检查覆盖]:
+- 检查文件: xxx, xxx
+- 无越权修改
+- 无安全问题
+- 架构一致性通过
+```
+
+#### 🟡 第 2 轮：运行时验证 (Runtime Verification)
+
+**启动后端服务，用真实请求验证所有 API。**
+
+操作步骤：
+1. 启动后端：`uvicorn backend.main:app --host 0.0.0.0 --port 8000`
+2. 用 curl/httpx 测试所有相关 API endpoint
+3. 验证成功路径：状态码 200、响应格式 `{success, message, data}`
+4. 验证失败路径：404、422 等错误状态码和错误信息
+5. 验证 SSE 流式输出：`POST /api/v1/chat/send` 返回 `text/event-stream`
+6. 验证数据库操作：数据正确写入、查询返回正确
+7. 验证已有 API 未受影响（回归测试）
+
+**输出格式：**
+```
+=== ROUND 2: RUNTIME VERIFICATION ===
+STATUS: PASS-ROUND-2 / FAIL-ROUND-2
+
+[列出每个测试的 API 和结果]:
+- GET /api/v1/personas → 200 ✅ / ❌ (错误信息)
+- POST /api/v1/chat/session → 200 ✅ / ❌
+- POST /api/v1/chat/send → SSE stream ✅ / ❌
+- ...
+```
+
+#### 🟢 第 3 轮：浏览器端到端验收 (Browser E2E — 强制执行，不可跳过)
+
+**打开浏览器，模拟真实用户操作。**
+
+操作步骤：
+1. 打开前端页面（`http://localhost:3000`）或后端 Swagger（`http://localhost:8000/docs`）
+2. 模拟完整用户流程：角色选择 → 创建会话 → 发送消息 → 查看回复
+3. 验证 UI 渲染正确：气泡对齐、typing 动画、情绪面板
+4. 验证 SSE 流式逐字显示
+5. 验证状态更新：情绪数据变化、记忆存储
+6. 验证错误状态：空消息拦截、无效 ID 处理、loading 状态
+7. 截图关键页面作为验收证据
+
+**输出格式：**
+```
+=== ROUND 3: BROWSER E2E ===
+STATUS: PASS-ROUND-3 / FAIL-ROUND-3
+
+[若 FAIL，列出问题]:
+- [严重级别] UI/交互问题描述 + 复现步骤
+- ...
+
+[若 PASS]:
+- 页面加载正常
+- 交互流程完整
+- SSE 流式显示正常
+- 错误状态覆盖
+- 截图: [路径或描述]
+```
+
+### 最终输出
+
+三轮全部完成后，输出最终结果：
+
+**全部通过：**
 ```
 TASK-ID: xxx
+REVIEW-TYPE: DEEPSEEK-3-ROUND-REVIEW
 STATUS: PASSED
+
+ROUND 1 (Static Analysis): PASS ✅
+ROUND 2 (Runtime Verify): PASS ✅
+ROUND 3 (Browser E2E):     PASS ✅
 ```
 
-### 验收失败规则
-
-如果任务未通过，必须输出：
-
+**任意一轮失败：**
 ```
 TASK-ID: xxx
+REVIEW-TYPE: DEEPSEEK-3-ROUND-REVIEW
 STATUS: FAILED
 
-问题列表:
-- bug 描述
-- 影响范围
+ROUND 1 (Static Analysis): PASS/FAIL
+ROUND 2 (Runtime Verify): PASS/FAIL
+ROUND 3 (Browser E2E):     PASS/FAIL
 
-修改建议:
-- 具体修复方案
-- 推荐代码结构
+发现的问题:
+- [严重级别 | Round N] 问题描述 + 影响范围 + 复现步骤
 
-是否重跑 DeepSeek:
-RETRY REQUIRED: YES / NO
+建议修复:
+- 具体方案
+
+是否需要 DeepSeek Dev 返工:
+RETRY: YES / NO
 ```
 
 并且**必须更新 `docs/ISSUES_LOG.md`**，记录：
@@ -258,57 +333,11 @@ RETRY REQUIRED: YES / NO
 - root cause
 - solution
 
----
-
-## Phase B2：DeepSeek Code-Review Team（交叉审查 — 1~3 Agent 并行）
-
-> **GLM 修改后，由 DeepSeek 以 Code-Review 角色再次审查，形成"交叉审查"闭环。**
-
-### Step 0：Skill 加载（最先执行，不可跳过）
-
-Agent 启动后，**在读取任何文件之前**，必须 invoke 以下 skill：
-1. `terminal-autonomous-execution` — 安全自主执行规则
-2. `code-review`（项目）— 交叉审查清单和输出规范（路径：`E:\ai-companion\.claude\skills\code-review\SKILL.md`）
-
-```
-→ invoke terminal-autonomous-execution
-→ invoke code-review
-→ 然后才能开始只读审查
-```
-
-未加载 skill 的 Agent 产出无效。
-
-### 职责
-
-DeepSeek Code-Review Agent 只负责：
-- 审查 GLM 的修改是否正确
-- 检查 GLM 修改是否引入新问题
-- 检查边界、安全、联动影响
-- **只读审查，不修改代码**
-
-### 强制规则
-
-**❌ 禁止：**
-- 修改代码
-- 新增功能
-- 询问用户
-- 评价 GLM
-
-**✅ 必须：**
-- 加载 `code-review` Skill（路径：`E:\ai-companion\.claude\skills\code-review\SKILL.md`）
-- 逐项检查审查清单
-- 引用具体文件和行号
-- 结构化输出
-
-### 审查输出
-
-通过 → `STATUS: PASSED`
-失败 → `STATUS: FAILED` + 问题列表 + 修复建议 + `RETRY: YES/NO`
-
 ### 审查完成后
 
-- PASSED → 进入 Claude 最终审查
-- FAILED → Claude 评估，必要时创建 FIX TASK 让 GLM 返工
+- PASSED → 进入 Claude 最终审查（Phase C）
+- FAILED → Claude 评估，必要时创建 FIX TASK 让 DeepSeek Dev 返工
+- **注意：只有三轮全部 PASS 才能进入 Phase C**
 
 ---
 
@@ -318,16 +347,14 @@ DeepSeek Code-Review Agent 只负责：
 
 Claude 只负责：
 - 任务拆分
-- 分配 DeepSeek
-- 调度 GLM
-- 调度 DeepSeek Code-Review
+- 分配 DeepSeek Dev
+- 调度 DeepSeek Review
 - **最终代码审查**（Phase C 结束时通读所有修改）
 - 决定是否进入下一阶段
 - 控制 schema / 架构稳定性
 - **维护 TASK_BOARD.md 状态（唯一修改者）**
-  - DeepSeek 输出 TASK COMPLETED → Claude 标记 `🔍 REVIEW`
-  - GLM 输出 PASSED → Claude 标记（准备进入 Code-Review）
-  - DeepSeek Code-Review 输出 PASSED → Claude 标记 `✅ DONE`
+  - DeepSeek Dev 输出 TASK COMPLETED → Claude 标记 `🔍 REVIEW`
+  - DeepSeek Review 输出 PASSED → Claude 标记 `✅ DONE`
   - 任何阶段输出 FAILED → Claude 标记 `❌ FAILED`，检查 ISSUES_LOG
 
 ### Claude 不做
@@ -342,25 +369,23 @@ Claude 只负责：
 ```
 用户说"开始工作" →
   ┌─────────────────────────────────────────┐
-  │ Phase A: DeepSeek Team (1~3 Agents)      │
+  │ Phase A: DeepSeek Dev Team (1~3 Agents)  │
   │   Agent-1: TASK-A  │ Agent-2: TASK-B     │
   │   Agent-3: TASK-C  │ (并行，文件隔离)      │
   │   → 各自输出 TASK COMPLETED → 停止       │
   └─────────────────────────────────────────┘
                     ↓
   ┌─────────────────────────────────────────┐
-  │ Phase B: GLM Team (1~3 Agents 并行验收)  │
-  │   Agent-1: Review TASK-A                 │
-  │   Agent-2: Review TASK-B                 │
-  │   Agent-3: Review TASK-C                 │
-  │   → 各自输出 PASSED/FAILED + 写 ISSUES_LOG│
-  └─────────────────────────────────────────┘
-                    ↓
-  ┌─────────────────────────────────────────┐
-  │ Phase B2: DeepSeek Code-Review Team      │
-  │   Agent-1: Code-Review GLM 修改          │
-  │   Agent-2: Code-Review GLM 修改          │
-  │   → 只读审查，输出 PASSED/FAILED         │
+  │ Phase B: DeepSeek Review Team (1~3)      │
+  │   Agent-1: Review TASK-A (≠ Dev-A)       │
+  │   Agent-2: Review TASK-B (≠ Dev-B)       │
+  │   Agent-3: Review TASK-C (≠ Dev-C)       │
+  │   → 各执行 3 轮审查:                      │
+  │     Round 1: 静态代码分析                 │
+  │     Round 2: 运行时 API 验证              │
+  │     Round 3: 浏览器 E2E 验收（强制）       │
+  │   → 三轮全 PASS 才输出 PASSED             │
+  │   → FAILED 则写 ISSUES_LOG               │
   └─────────────────────────────────────────┘
                     ↓
   ┌─────────────────────────────────────────┐
@@ -371,11 +396,11 @@ Claude 只负责：
 
 ### 并行执行规则
 
-- DeepSeek Team：**强制 3 Agent 同时工作**（不足 3 个 TASK 也启动，闲置输出 IDLE）
-- GLM Team：最多 3 Agent 同时验收（TASK 隔离）
+- DeepSeek Dev Team：**强制 3 Agent 同时工作**（不足 3 个 TASK 也启动，闲置输出 IDLE）
+- DeepSeek Review Team：最多 3 Agent 同时验收（TASK 隔离，交叉审查）
 - 每个 Agent 的 TASK 范围不重叠
 - 涉及同一文件的 TASK 必须串行
-- DeepSeek 全部完成并停止后，GLM 才开始验收
+- DeepSeek Dev 全部完成并停止后，DeepSeek Review 才开始验收
 
 ---
 
@@ -398,20 +423,25 @@ Claude 只负责：
 
 ---
 
-## 浏览器验收规则（GLM 必须执行）
+## 浏览器验收规则（DeepSeek Review Agent 强制执行 — Round 3）
 
-验收时必须：
-- 打开本地/部署前端
-- 点击 UI
-- 验证 API response
-- 验证 streaming
-- 验证 state update
+> **浏览器验收为审查第 3 轮，强制执行，不可跳过。未执行浏览器验收的审查结果无效。**
+
+验收步骤：
+1. 打开前端（`http://localhost:3000`）或 Swagger（`http://localhost:8000/docs`）
+2. 走通完整用户流程：角色选择 → 创建会话 → 发送消息 → 查看回复
+3. 验证 UI 渲染（气泡左右对齐、typing 动画、情绪面板）
+4. 验证 SSE streaming 逐字显示正常
+5. 验证 state update（情绪数据变化、记忆存储）
+6. 验证错误状态（空消息、无效 ID、loading、error）
+7. 截图关键页面作为验收证据
 
 验收失败必须记录格式：
 ```
 ISSUE: xxx
 CAUSE: xxx
 SOLUTION: xxx
+ROUND: 3 (Browser E2E)
 ```
 
 ---
@@ -426,6 +456,6 @@ SOLUTION: xxx
 - 所有行为来自 TASK
 
 最终效果：
-- DeepSeek = 自动写代码（CI builder）
-- GLM = 自动 QA（测试工程师）
+- DeepSeek Dev = 自动写代码（CI builder）
+- DeepSeek Review = 自动 QA + 交叉审查（测试工程师 + Code Reviewer）
 - Claude = 项目经理 + 架构师
