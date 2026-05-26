@@ -1,6 +1,6 @@
 # ISSUES LOG
 
-> **问题日志。GLM 验收失败时必须在此记录。Claude 定期审查。**
+> **问题日志。DeepSeek Review 验收失败时必须在此记录。Claude 定期审查。**
 
 ---
 

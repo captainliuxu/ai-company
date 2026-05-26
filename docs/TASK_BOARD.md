@@ -11,12 +11,12 @@
 ```
 ⬜ TODO        → Claude 创建 TASK 时设置
 🔨 IN_PROGRESS → Claude 分配 TASK 给 DeepSeek 时设置
-🔍 REVIEW      → Claude 收到 DeepSeek 完成信号后设置（此时 GLM 可领取审查）
-✅ DONE        → Claude 收到 GLM PASSED 后设置
-❌ FAILED      → Claude 收到 GLM FAILED 后设置
+🔍 REVIEW      → Claude 收到 DeepSeek Dev 完成信号后设置（此时 DeepSeek Review 可领取审查）
+✅ DONE        → Claude 收到 DeepSeek Review PASSED 后设置
+❌ FAILED      → Claude 收到 DeepSeek Review FAILED 后设置
 ```
 
-**关键规则：只有 `🔍 REVIEW` 状态的 TASK 才会被 GLM 领取审查。Claude 必须在 DeepSeek 完成后立即更新状态，否则 GLM 无法开始工作。**
+**关键规则：只有 `🔍 REVIEW` 状态的 TASK 才会被 DeepSeek Review Agent 领取审查。Claude 必须在 DeepSeek Dev 完成后立即更新状态，否则 Review Agent 无法开始工作。**
 
 ---
 
@@ -307,7 +307,7 @@ Wave: 4（依赖 PH1-004）
 
 ---
 
-## Phase 1 修复 TASK（GLM 验收发现）
+## Phase 1 修复 TASK（DeepSeek Review 验收发现）
 
 ### TASK PH1-FIX-001：修复 created_at 类型转换 (ISSUE-001)
 

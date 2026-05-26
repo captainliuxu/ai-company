@@ -9,7 +9,7 @@
 
 | 文档 | 内容 |
 |------|------|
-| `AGENT_RULES.md` | **权威** — Agent 行为规则、三段式流水线、YOLO 模式、并行规则 |
+| `AGENT_RULES.md` | **权威** — Agent 行为规则、二段式流水线、YOLO 模式、并行规则 |
 | `multi_agent_workflow.md`（本文档） | 模块 Ownership + TASK 模板 + Review 模板 |
 | `TASK_BOARD.md` | 实时任务看板 |
 | `ISSUES_LOG.md` | 问题追踪日志 |
@@ -20,18 +20,18 @@
 
 | 模块 | Owner | 可读 | 可写 |
 |------|-------|:----:|:----:|
-| `backend/api/` | DeepSeek | ALL | DeepSeek / DeepSeek(Review) |
-| `backend/services/` | DeepSeek | ALL | DeepSeek / DeepSeek(Review) |
-| `backend/models/` | DeepSeek | ALL | DeepSeek / DeepSeek(Review) |
-| `backend/schemas/` | DeepSeek | ALL | DeepSeek / DeepSeek(Review) |
+| `backend/api/` | DeepSeek | ALL | DeepSeek |
+| `backend/services/` | DeepSeek | ALL | DeepSeek |
+| `backend/models/` | DeepSeek | ALL | DeepSeek |
+| `backend/schemas/` | DeepSeek | ALL | DeepSeek |
 | `docs/` | Claude | ALL | Claude |
 | Prompt System | Claude | Claude | Claude |
 | Architecture | Claude | ALL | Claude |
 | `PROJECT_PLAN.md` | Claude | ALL | Claude |
 | `TASK_BOARD.md` | Claude | ALL | Claude |
-| `ISSUES_LOG.md` | GLM | ALL | GLM |
+| `ISSUES_LOG.md` | DeepSeek(Review) | ALL | DeepSeek(Review) |
 | Code Review | DeepSeek(Review) | ALL | DeepSeek(Review) |
-| Browser Testing | GLM | ALL | GLM（最多 3 Agent 并行） |
+| Browser Testing | DeepSeek(Review) | ALL | DeepSeek(Review)（最多 3 Agent 并行） |
 | `frontend/` | DeepSeek | ALL | DeepSeek |
 
 ---
@@ -45,9 +45,9 @@
 - TASK 不足 3 个 → 仍启动 3 Agent，闲置输出 IDLE
 - 每个 Agent = 1 个独立 TASK，文件范围不重叠
 - 涉及同一文件的 TASK → 串行执行
-- 所有 DeepSeek Agent 完成后 → Claude 必须立即将 TASK_BOARD 状态更新为 `🔍 REVIEW`
-- 只有 `🔍 REVIEW` 状态的 TASK 才能进入 GLM 验收阶段
-- GLM Team 启动（最多 3 Agent 并行验收）
+- 所有 DeepSeek Dev Agent 完成后 → Claude 必须立即将 TASK_BOARD 状态更新为 `🔍 REVIEW`
+- 只有 `🔍 REVIEW` 状态的 TASK 才能进入 DeepSeek Review 验收阶段
+- DeepSeek Review Team 启动（最多 3 Agent 并行验收，交叉审查）
 
 ### TASK 拆分原则（Claude 责任）
 - 每个 TASK 涉及的文件不与其他 TASK 重叠
@@ -84,7 +84,7 @@ TASK-ID: PHASE{N}-{序号}
 
 ---
 
-## GLM Review 输出模板
+## DeepSeek Review 输出模板
 
 **通过：**
 ```
@@ -104,6 +104,6 @@ STATUS: FAILED
 - 具体修复方案
 - 推荐代码结构
 
-是否重跑 DeepSeek:
+是否重跑 DeepSeek Dev:
 RETRY REQUIRED: YES / NO
 ```

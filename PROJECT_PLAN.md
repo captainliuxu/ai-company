@@ -44,7 +44,7 @@ Phase N 开始
   ├─→ STEP 2: Claude 分配 TASK → DeepSeek 实现
   │     └─→ DeepSeek 按 TASK 精确编码，不越界
   │
-  ├─→ STEP 3: GLM Review 代码
+  ├─→ STEP 3: DeepSeek Review 代码
   │     └─→ 输出 REVIEW REPORT
   │
   ├─→ STEP 4: Claude Merge Decision

@@ -13,6 +13,8 @@ from backend.schemas.chat import SessionCreate, SessionResponse, ChatRequest, Ch
 from datetime import datetime
 from backend.services.persona_service import PersonaService
 from backend.services.prompt_builder import build_messages
+from backend.services.emotion_service import EmotionService
+from backend.services.memory_service import MemoryService
 
 router = APIRouter(prefix="/api/v1", tags=["personas"])
 
@@ -97,9 +99,21 @@ async def send_message(
 
     persona_dict = persona.model_dump()
 
+    # Get current emotion state for prompt enhancement
+    emotion_service = EmotionService(db)
+    current_emotion = await emotion_service.get_current_state(body.session_id)
+    emotion_state = None
+    if current_emotion:
+        emotion_state = {
+            "favorability": current_emotion.favorability,
+            "trust": current_emotion.trust,
+            "mood": current_emotion.mood,
+            "dependency": current_emotion.dependency,
+        }
+
     async def stream_generator():
         full_reply = ""
-        messages = build_messages(persona_dict, session["messages"], body.message)
+        messages = build_messages(persona_dict, session["messages"], body.message, emotion_state)
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
             async with client.stream(
@@ -138,6 +152,20 @@ async def send_message(
         session["messages"].append({"role": "user", "content": body.message})
         session["messages"].append({"role": "assistant", "content": full_reply})
 
+        # Record emotion state after this exchange
+        await emotion_service.analyze_emotion(body.session_id, body.message, full_reply)
+
+        # Extract and store long-term memories
+        memory_service = MemoryService(db)
+        extracted = await memory_service.extract_from_conversation(body.message, full_reply)
+        for mem in extracted:
+            await memory_service.add_memory(
+                body.session_id,
+                mem["type"],
+                mem["content"],
+                mem.get("importance", 3),
+            )
+
     return StreamingResponse(
         stream_generator(),
         media_type="text/event-stream",
@@ -147,3 +175,82 @@ async def send_message(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@router.get("/emotion/{session_id}")
+async def get_emotion_state(session_id: str, db: AsyncSession = Depends(get_db)):
+    if session_id not in _sessions:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Session not found", "data": None},
+        )
+    service = EmotionService(db)
+    state = await service.get_current_state(session_id)
+    if state is None:
+        return {"success": True, "message": "No emotion data yet", "data": None}
+    return {
+        "success": True,
+        "message": "",
+        "data": {
+            "session_id": state.session_id,
+            "favorability": state.favorability,
+            "trust": state.trust,
+            "mood": state.mood,
+            "dependency": state.dependency,
+            "created_at": state.created_at.isoformat() if state.created_at else None,
+        },
+    }
+
+
+@router.get("/emotion/{session_id}/history")
+async def get_emotion_history(session_id: str, db: AsyncSession = Depends(get_db)):
+    if session_id not in _sessions:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Session not found", "data": None},
+        )
+    service = EmotionService(db)
+    history = await service.get_history(session_id)
+    return {
+        "success": True,
+        "message": "",
+        "data": {
+            "history": [
+                {
+                    "session_id": e.session_id,
+                    "favorability": e.favorability,
+                    "trust": e.trust,
+                    "mood": e.mood,
+                    "dependency": e.dependency,
+                    "created_at": e.created_at.isoformat() if e.created_at else None,
+                }
+                for e in history
+            ]
+        },
+    }
+
+
+@router.get("/memories/{session_id}")
+async def get_memories(session_id: str, type: str | None = None, db: AsyncSession = Depends(get_db)):
+    service = MemoryService(db)
+    if type:
+        memories = await service.get_by_type(session_id, type)
+    else:
+        memories = await service.get_by_session(session_id)
+    return {
+        "success": True,
+        "message": "",
+        "data": {
+            "memories": [
+                {
+                    "id": m.id,
+                    "session_id": m.session_id,
+                    "type": m.type,
+                    "content": m.content,
+                    "importance": m.importance,
+                    "created_at": m.created_at.isoformat() if m.created_at else None,
+                }
+                for m in memories
+            ]
+        },
+    }

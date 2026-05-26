@@ -3,6 +3,10 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = BASE_DIR / "data"
 
@@ -13,7 +17,7 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{DATA_DIR}/app.db
 # 敏感值通过 .env 文件配置，参见 .env.example
 AI_API_KEY = os.getenv("AI_API_KEY", "")
 AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.xykjy.com")
-AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash")
+AI_MODEL = os.getenv("AI_MODEL", "gemini-2.5-flash")
 
 # Embedding
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
