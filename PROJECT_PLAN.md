@@ -12,12 +12,12 @@
 | 0 | 项目骨架 + 文档 | 已完成 | ✅ |
 | 1 | Persona System | Day 1 | ✅ |
 | 2 | Chat API + Prompt Builder | Day 2 | ✅ |
-| 3 | Emotion System | Day 3 | ⬜ |
-| 4 | Long-term Memory | Day 4 | ⬜ |
-| 5 | Lightweight RAG | Day 5 | ⬜ |
-| 6 | Conversation Summary | Day 6 | ⬜ |
-| 7 | Product Chat UI | Day 7 | ⬜ |
-| 8 | 集成调试 + Demo 打磨 | Day 8 | ⬜ |
+| 3 | Emotion System | Day 3 | ✅ |
+| 4 | Long-term Memory | Day 4 | ✅ |
+| 5 | Lightweight RAG | Day 5 | ✅ |
+| 6 | Conversation Summary | Day 6 | ✅ |
+| 7 | Product Chat UI | Day 7 | ✅ |
+| 8 | 集成调试 + Demo 打磨 | Day 8 | ✅ |
 
 ---
 

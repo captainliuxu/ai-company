@@ -4,11 +4,13 @@ import json
 import logging
 
 import httpx
+import numpy as np
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
 from backend.models.memory import Memory
+from backend.services.rag_service import RAGService
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,7 @@ class MemoryService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.rag_service = RAGService()
 
     async def extract_from_conversation(
         self, user_message: str, ai_reply: str
@@ -98,6 +101,14 @@ class MemoryService:
             content=content,
             importance=importance,
         )
+
+        # Generate embedding for semantic search
+        try:
+            embedding_list = self.rag_service.encode(content)
+            memory.embedding = np.array(embedding_list, dtype=np.float32).tobytes()
+        except Exception as exc:
+            logger.warning("Failed to generate embedding for memory: %s", exc)
+
         self.db.add(memory)
         await self.db.commit()
         await self.db.refresh(memory)
@@ -120,6 +131,27 @@ class MemoryService:
             .order_by(Memory.created_at.desc())
         )
         return list(result.scalars().all())
+
+
+    async def search_memories(
+        self, session_id: str, query: str, top_k: int = 5
+    ) -> list[Memory]:
+        """Semantic search over memories for a session using RAG embeddings.
+
+        Only returns memories that have non-None embeddings. Falls back to
+        keyword-based filtering if no embeddings are available.
+        """
+        all_memories = await self.get_by_session(session_id)
+        memories_with_embeddings = [m for m in all_memories if m.embedding is not None]
+
+        if not memories_with_embeddings:
+            logger.debug(
+                "No embedded memories found for session %s; falling back to empty result.",
+                session_id,
+            )
+            return []
+
+        return self.rag_service.search(query, memories_with_embeddings, top_k=top_k)
 
 
 def _parse_memory_json(raw_text: str) -> list[dict]:

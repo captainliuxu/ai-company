@@ -3,7 +3,7 @@
 import json
 
 
-def build_system_prompt(persona: dict, emotion_state: dict | None = None) -> str:
+def build_system_prompt(persona: dict, emotion_state: dict | None = None, memory_context: str | None = None) -> str:
     traits_str = json.dumps(persona.get("emotional_traits", {}), ensure_ascii=False)
     base = (
         f"你是{persona.get('name', 'AI助手')}。\n"
@@ -23,11 +23,13 @@ def build_system_prompt(persona: dict, emotion_state: dict | None = None) -> str
             f"- 依赖度：{emotion_state.get('dependency', 0)}/100\n"
             f"\n请根据当前情绪状态调整回复的语气和内容。"
         )
+    if memory_context:
+        base += f"\n\n【相关记忆】\n{memory_context}\n\n请自然融入回复中，不要刻意列举。"
     return base
 
 
-def build_messages(persona: dict, history: list[dict], user_message: str, emotion_state: dict | None = None) -> list[dict]:
-    system_content = build_system_prompt(persona, emotion_state)
+def build_messages(persona: dict, history: list[dict], user_message: str, emotion_state: dict | None = None, memory_context: str | None = None) -> list[dict]:
+    system_content = build_system_prompt(persona, emotion_state, memory_context)
     messages = [{"role": "system", "content": system_content}]
     for msg in history:
         messages.append({"role": msg.get("role", "user"), "content": msg.get("content", "")})

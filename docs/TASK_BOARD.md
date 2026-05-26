@@ -616,10 +616,10 @@ PH3-001 ──→ PH3-002 ──┐
 
 | TASK-ID | 描述 | Wave | 状态 | 分配 |
 |---------|------|:----:|:----:|:----:|
-| PH3-001 | Emotion 数据模型 | 1 | ⬜ TODO | DeepSeek |
-| PH3-002 | Emotion Service | 2 | ⬜ TODO | DeepSeek |
-| PH3-003 | Prompt Builder Emotion Block | 2 | ⬜ TODO | DeepSeek |
-| PH3-004 | Emotion API + Chat 集成 | 3 | ⬜ TODO | DeepSeek |
+| PH3-001 | Emotion 数据模型 | 1 | ✅ DONE | DeepSeek |
+| PH3-002 | Emotion Service | 2 | ✅ DONE | DeepSeek |
+| PH3-003 | Prompt Builder Emotion Block | 2 | ✅ DONE | DeepSeek |
+| PH3-004 | Emotion API + Chat 集成 | 3 | ✅ DONE | DeepSeek |
 
 ---
 
@@ -784,9 +784,9 @@ PH4-001 → PH4-002 → PH4-003
 
 | TASK-ID | 描述 | Wave | 状态 | 分配 |
 |---------|------|:----:|:----:|:----:|
-| PH4-001 | Memory 数据模型 | 1 | ⬜ TODO | DeepSeek |
-| PH4-002 | Memory Service | 2 | ⬜ TODO | DeepSeek |
-| PH4-003 | Memory API + 对话提取 | 3 | ⬜ TODO | DeepSeek |
+| PH4-001 | Memory 数据模型 | 1 | ✅ DONE | DeepSeek |
+| PH4-002 | Memory Service | 2 | ✅ DONE | DeepSeek |
+| PH4-003 | Memory API + 对话提取 | 3 | ✅ DONE | DeepSeek |
 
 ---
 
@@ -914,9 +914,9 @@ PH5-001 ──→ PH5-002 ──┐
 
 | TASK-ID | 描述 | Wave | 状态 | 分配 |
 |---------|------|:----:|:----:|:----:|
-| PH5-001 | RAG Service | 1 | ⬜ TODO | DeepSeek |
-| PH5-002 | Memory embedding 生成 | 2 | ⬜ TODO | DeepSeek |
-| PH5-003 | Prompt Builder Memory Block | 2 | ⬜ TODO | DeepSeek |
+| PH5-001 | RAG Service | 1 | ✅ DONE | DeepSeek |
+| PH5-002 | Memory embedding 生成 | 2 | ✅ DONE | DeepSeek |
+| PH5-003 | Prompt Builder Memory Block | 2 | ✅ DONE | DeepSeek |
 
 ---
 
@@ -1040,8 +1040,8 @@ PH6-001 → PH6-002
 
 | TASK-ID | 描述 | Wave | 状态 | 分配 |
 |---------|------|:----:|:----:|:----:|
-| PH6-001 | Summary Service | 1 | ⬜ TODO | DeepSeek |
-| PH6-002 | Chat 集成 + 摘要触发 | 2 | ⬜ TODO | DeepSeek |
+| PH6-001 | Summary Service | 1 | ✅ DONE | DeepSeek |
+| PH6-002 | Chat 集成 + 摘要触发 | 2 | ✅ DONE | DeepSeek |
 
 ---
 
@@ -1129,11 +1129,11 @@ PH7-001 ──→ PH7-002 ──┐
 
 | TASK-ID | 描述 | Wave | 状态 | 分配 |
 |---------|------|:----:|:----:|:----:|
-| PH7-001 | Next.js 项目初始化 | 1 | ⬜ TODO | DeepSeek |
-| PH7-002 | 角色选择页 | 2 | ⬜ TODO | DeepSeek |
-| PH7-003 | 聊天 UI 组件 | 2 | ⬜ TODO | DeepSeek |
-| PH7-004 | SSE 集成 + 情绪面板 | 3 | ⬜ TODO | DeepSeek |
-| PH7-005 | 响应式 + 打磨 | 4 | ⬜ TODO | DeepSeek |
+| PH7-001 | Next.js 项目初始化 | 1 | ✅ DONE | DeepSeek |
+| PH7-002 | 角色选择页 | 2 | ✅ DONE | DeepSeek |
+| PH7-003 | 聊天 UI 组件 | 2 | ✅ DONE | DeepSeek |
+| PH7-004 | SSE 集成 + 情绪面板 | 3 | ✅ DONE | DeepSeek |
+| PH7-005 | 响应式 + 打磨 | 4 | ✅ DONE | DeepSeek |
 
 ---
 
@@ -1306,10 +1306,10 @@ Wave: 4（依赖 PH7-004）
 
 | TASK-ID | 描述 | 状态 | 分配 |
 |---------|------|:----:|:----:|
-| PH8-001 | 全链路走通 | ⬜ TODO | DeepSeek |
-| PH8-002 | Bug 修复 | ⬜ TODO | DeepSeek |
-| PH8-003 | 边界情况处理 | ⬜ TODO | DeepSeek |
-| PH8-004 | 最终打磨 | ⬜ TODO | DeepSeek |
+| PH8-001 | 全链路走通 | 1 | ✅ DONE | DeepSeek |
+| PH8-002 | Bug 修复 | 2 | ✅ DONE | DeepSeek |
+| PH8-003 | 边界情况处理 | 3 | ✅ DONE | DeepSeek |
+| PH8-004 | 最终打磨 | 4 | ✅ DONE | DeepSeek |
 
 ---
 

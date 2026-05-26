@@ -15,6 +15,7 @@ from backend.services.persona_service import PersonaService
 from backend.services.prompt_builder import build_messages
 from backend.services.emotion_service import EmotionService
 from backend.services.memory_service import MemoryService
+from backend.services.summary_service import SummaryService
 
 router = APIRouter(prefix="/api/v1", tags=["personas"])
 
@@ -111,9 +112,19 @@ async def send_message(
             "dependency": current_emotion.dependency,
         }
 
+    # Search relevant memories via RAG
+    memory_service = MemoryService(db)
+    relevant_memories = await memory_service.search_memories(body.session_id, body.message, top_k=5)
+    memory_context = None
+    if relevant_memories:
+        lines = []
+        for i, mem in enumerate(relevant_memories, 1):
+            lines.append(f"{i}. {mem.content}")
+        memory_context = "\n".join(lines)
+
     async def stream_generator():
         full_reply = ""
-        messages = build_messages(persona_dict, session["messages"], body.message, emotion_state)
+        messages = build_messages(persona_dict, session["messages"], body.message, emotion_state, memory_context)
 
         async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
             async with client.stream(
@@ -156,7 +167,6 @@ async def send_message(
         await emotion_service.analyze_emotion(body.session_id, body.message, full_reply)
 
         # Extract and store long-term memories
-        memory_service = MemoryService(db)
         extracted = await memory_service.extract_from_conversation(body.message, full_reply)
         for mem in extracted:
             await memory_service.add_memory(
@@ -165,6 +175,14 @@ async def send_message(
                 mem["content"],
                 mem.get("importance", 3),
             )
+
+        # Check if conversation needs summarization
+        summary_service = SummaryService(db)
+        if await summary_service.should_summarize(session["messages"]):
+            summary = await summary_service.generate_summary(session["messages"])
+            if summary:
+                session["messages"] = summary_service.apply_summary(session["messages"], summary)
+                await memory_service.add_memory(body.session_id, "summary", summary, 5)
 
     return StreamingResponse(
         stream_generator(),
