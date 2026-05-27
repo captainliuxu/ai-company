@@ -1376,3 +1376,75 @@ Wave: 4（依赖 PH7-004）
 - [ ] 边界情况有对应处理
 - [ ] Demo 演示流畅
 - [ ] 所有 ISSUES_LOG 已修复或标记 WONT_FIX
+
+---
+
+## Bug Fix Wave 2026-05-27
+
+**目标：** 修复用户在 `docs/BUG_REPORTS.md` 中记录的当前 4 个问题，并验证受影响链路不回归。
+
+### 状态一览
+
+| TASK-ID | 描述 | 关联 BUG | 状态 | 分配 |
+|---------|------|----------|:----:|:----:|
+| BUG-FIX-001 | 修复聊天卡死与发送后不可恢复问题 | BUG-001 | ✅ DONE | DeepSeek |
+| BUG-FIX-002 | 修复聊天页流式感知、禁用态按钮与返回入口 | BUG-002, BUG-003, BUG-004 | ✅ DONE | DeepSeek |
+
+### TASK BUG-FIX-001：修复 BUG-001 — 聊天卡死与发送后不可恢复
+
+```
+TASK-ID: BUG-FIX-001
+名称: 修复 BUG-001 — 聊天卡死与发送后不可恢复
+关联: docs/BUG_REPORTS.md / BUG-001
+
+目标:
+- 修复聊天在首轮后或多轮发送时 AI 不再回复的问题
+- 确保前端输入框、按钮和本地消息状态能在成功/失败/中断后恢复
+- 验证聊天主链路不会因 SSE 完成信号、异常响应或空回复而卡死
+
+允许修改文件:
+- E:\ai-companion\frontend\src\lib\api.ts
+- E:\ai-companion\backend\api\chat.py
+
+禁止修改:
+- E:\ai-companion\frontend\src\app\chat\page.tsx
+- 其他 backend/services/、backend/models/、frontend/ 代码
+
+验收标准:
+- ✔ 连续发送两条及以上消息，后续请求仍能收到回复
+- ✔ 任一失败路径下输入框都会重新可用
+- ✔ 无论 AI 返回空片段、错误片段或 done 片段，前端都不会永久 disabled
+- ✔ 会话消息不会因失败回调被错误回滚
+```
+
+### TASK BUG-FIX-002：修复 BUG-002 / BUG-003 / BUG-004 — 聊天页交互与可用性
+
+```
+TASK-ID: BUG-FIX-002
+名称: 修复 BUG-002 / BUG-003 / BUG-004 — 聊天页交互与可用性
+关联: docs/BUG_REPORTS.md / BUG-002, BUG-003, BUG-004
+
+目标:
+- 提升用户对 SSE 流式输出的可感知性
+- 确认后端确实按流式发送，前端确实按增量消费
+- 在不破坏现有聊天 API 的前提下，保证逐字/逐段输出明显可见
+- 将发送按钮禁用态调整为明显的纯灰色视觉
+- 在聊天页提供稳定、清晰的返回角色选择入口
+
+允许修改文件:
+- E:\ai-companion\frontend\src\app\chat\page.tsx
+
+禁止修改:
+- E:\ai-companion\frontend\src\lib\api.ts
+- E:\ai-companion\backend\api\chat.py
+- 其他 frontend/、backend/ 代码
+
+验收标准:
+- ✔ 发送消息后用户能明确观察到回复逐步出现
+- ✔ typing indicator 与流式展示衔接自然
+- ✔ 回复结束后不会额外重复渲染整段消息
+- ✔ 不破坏现有发送、自动滚动与错误提示逻辑
+- ✔ 输入框为空或发送中时，发送按钮呈纯灰色禁用态
+- ✔ 聊天页顶部始终可见返回 `/personas` 的入口
+- ✔ 不影响现有聊天页布局、响应式和交互
+```
