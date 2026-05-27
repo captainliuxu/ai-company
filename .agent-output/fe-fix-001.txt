@@ -1,0 +1,10 @@
+**Summary**
+已完成 `FE-FIX-001`，只修改了 [api.ts](E:/ai-companion/frontend/src/lib/api.ts:88)。
+
+在 [api.ts](E:/ai-companion/frontend/src/lib/api.ts:88) 新增了两个校验 helper，用于强制检查 API envelope 的 `data` 必须是对象，且 `memories` / `history` 必须是数组。随后将 [fetchMemories](E:/ai-companion/frontend/src/lib/api.ts:174) 和 [fetchEmotionHistory](E:/ai-companion/frontend/src/lib/api.ts:189) 的本地 `try/catch -> []` 兜底去掉，改为让非 200、无效 JSON envelope、无效 `data` 结构直接抛错给调用方。成功路径保持不变，正常返回规范化后的数组，空数组仍然是合法成功结果。
+
+**Verification**
+运行了 `npm run build --prefix E:\ai-companion\frontend`，构建和 TypeScript 校验均通过。当前结果满足任务目标：页面现在可以区分 empty 和 error，两条 API 的真实失败不会再被伪装成空数组。
+
+TASK COMPLETED
+STATUS: DONE

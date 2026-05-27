@@ -1,0 +1,12 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e24] [cursor=pointer]:
+    - img [ref=e25]
+  - alert [ref=e28]
+  - generic [ref=e29]:
+    - generic [ref=e31]:
+      - heading "小暖" [level=1] [ref=e32]
+      - paragraph [ref=e33]: 温柔体贴、善解人意
+    - generic [ref=e35]: 向小暖发送第一条消息吧~
+    - generic [ref=e37]:
+      - textbox "输入消息..." [ref=e38]
+      - button "发送" [disabled] [ref=e39]

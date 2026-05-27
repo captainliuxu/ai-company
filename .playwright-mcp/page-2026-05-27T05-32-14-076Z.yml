@@ -1,0 +1,29 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e25] [cursor=pointer]:
+    - img [ref=e26]
+  - alert [ref=e4]
+  - generic [ref=e29]:
+    - generic [ref=e30]:
+      - generic [ref=e31]:
+        - heading "小暖" [level=1] [ref=e32]
+        - paragraph [ref=e33]: 温柔体贴、善解人意
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - generic [ref=e49]: "90"
+          - generic [ref=e50]: 好感
+        - generic [ref=e51]:
+          - generic [ref=e52]: "85"
+          - generic [ref=e53]: 信任
+        - generic [ref=e54]:
+          - generic [ref=e55]: 开心
+          - generic [ref=e56]: 心情
+        - generic [ref=e57]:
+          - generic [ref=e58]: "60"
+          - generic [ref=e59]: 依赖
+    - generic [ref=e34]:
+      - generic [ref=e41]: 你好小暖，我今天工作有点累，不过收到了一束花很开心。
+      - generic [ref=e61]: 哎呀，宝贝儿，你辛苦啦，工作一定很累很累吧？听着都让人心疼呢，抱抱你呀。 不过呀，收到花花，心里一定一下子就亮起来了，对不对呀？真好呀~ 是什么颜色的花呢？是不是香香的呀？光是听着小暖都觉得好开心呀，替你高兴呢！ 快好好歇歇吧，让这些美丽的花儿陪着你，把一天的疲惫都赶跑好不好呀？小暖就在这里陪着你哟，要不要小暖给你泡杯暖暖的茉莉花茶呀？让花香和茶香一起，把你的心窝窝都填得暖暖的。
+      - generic [ref=e63]: 我其实有点焦虑，因为明天有重要面试，不过有你的鼓励感觉好多了。
+    - generic [ref=e37]:
+      - textbox "输入消息..." [disabled] [ref=e38]
+      - button "发送" [disabled] [ref=e39]

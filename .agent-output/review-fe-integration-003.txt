@@ -1,0 +1,32 @@
+TASK-ID: `FE-INTEGRATION-003`
+
+ROUND 1: `PASS`
+- 静态审查通过，改动范围符合任务边界，只落在 [frontend/src/app/chat/page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:18)。
+- 任务要求的接入点都能在代码中找到：
+  - session 建立后拉取 memories: [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:105)
+  - session 建立后拉取 emotion history: [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:134)
+  - 每轮回复完成后统一刷新 insight 数据: [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:195), [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:217)
+  - summary 状态与预览: [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:300), [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:307), [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:398)
+  - 桌面/移动端洞察面板入口: [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:437), [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:533)
+- `Next.js` 构建也通过了：`npm run build --prefix E:\ai-companion\frontend`
+
+ROUND 2: `FAIL`
+- 运行时主链路失败，无法通过真实会话验证“聊天后刷新 memories / emotion history”。
+- 实测顺序是：
+  1. `GET /api/v1/personas` 成功
+  2. `POST /api/v1/chat/session` 成功返回 `session_id`
+  3. 紧接着 `POST /api/v1/chat/send` 返回 `404`，消息为 `Session not found`
+  4. 之后 `GET /api/v1/emotion/{session_id}` 和 `GET /api/v1/emotion/{session_id}/history` 同样返回 `Session not found`
+- 相关后端位置：
+  - session 存在进程内 `_sessions`： [backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:59)
+  - session 创建： [chat.py](/E:/ai-companion/backend/api/chat.py:63)
+  - 发送消息前直接从 `_sessions` 取 session： [chat.py](/E:/ai-companion/backend/api/chat.py:90), [chat.py](/E:/ai-companion/backend/api/chat.py:94)
+- 结论：当前前后端组合下，聊天页“不破坏现有聊天”这一验收标准未满足，因基础会话链路已失效。
+
+ROUND 3: `FAIL`
+- 浏览器 E2E 未能完成验收。
+- 原因一：浏览器工具当前被占用，返回错误：`Browser is already in use ... use --isolated to run multiple instances`
+- 原因二：即使绕过工具占用，第 2 轮已确认当前环境里的 chat session 链路失败，因此“洞察面板刷新、summary 状态更新、聊天非回归”无法在真实页面上判定通过。
+- 额外说明：summary 触发阈值当前是 `20` 轮用户消息，见 [backend/config.py](/E:/ai-companion/backend/config.py:34) 和 [backend/services/summary_service.py](/E:/ai-companion/backend/services/summary_service.py:37)。在 session 主链路失败的前提下，这一项也无法完成浏览器验收。
+
+STATUS: `FAILED`

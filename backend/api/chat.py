@@ -2,17 +2,18 @@ import asyncio
 import json
 import logging
 import uuid
+from datetime import datetime
 
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
-from backend.database import get_db
+from backend.database import async_session, get_db
 from backend.models.persona import Persona
 from backend.schemas.chat import SessionCreate, SessionResponse, ChatRequest, ChatMessage
-from datetime import datetime
 from backend.services.persona_service import PersonaService
 from backend.services.prompt_builder import build_messages
 from backend.services.emotion_service import EmotionService
@@ -55,8 +56,81 @@ async def get_persona(persona_id: str, db: AsyncSession = Depends(get_db)):
     }
 
 
-# In-memory session store (will be migrated to SQLite in Phase 4)
-_sessions: dict[str, dict] = {}
+async def _create_session(
+    db: AsyncSession,
+    session_id: str,
+    persona_id: str,
+    created_at: str,
+) -> None:
+    await db.execute(
+        text(
+            """
+            INSERT INTO chat_sessions (session_id, persona_id, messages_json, created_at)
+            VALUES (:session_id, :persona_id, :messages_json, :created_at)
+            """
+        ),
+        {
+            "session_id": session_id,
+            "persona_id": persona_id,
+            "messages_json": "[]",
+            "created_at": created_at,
+        },
+    )
+    await db.commit()
+
+
+async def _get_session(db: AsyncSession, session_id: str) -> dict | None:
+    result = await db.execute(
+        text(
+            """
+            SELECT session_id, persona_id, messages_json, created_at
+            FROM chat_sessions
+            WHERE session_id = :session_id
+            """
+        ),
+        {"session_id": session_id},
+    )
+    row = result.mappings().first()
+    if row is None:
+        return None
+    try:
+        messages = json.loads(row["messages_json"])
+    except json.JSONDecodeError:
+        messages = []
+    return {
+        "session_id": row["session_id"],
+        "persona_id": row["persona_id"],
+        "messages": messages if isinstance(messages, list) else [],
+        "created_at": row["created_at"],
+    }
+
+
+async def _require_session(db: AsyncSession, session_id: str) -> dict:
+    session = await _get_session(db, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return session
+
+
+async def _save_session_messages(
+    db: AsyncSession,
+    session_id: str,
+    messages: list[dict],
+) -> None:
+    await db.execute(
+        text(
+            """
+            UPDATE chat_sessions
+            SET messages_json = :messages_json
+            WHERE session_id = :session_id
+            """
+        ),
+        {
+            "session_id": session_id,
+            "messages_json": json.dumps(messages, ensure_ascii=False),
+        },
+    )
+    await db.commit()
 
 
 @router.post("/chat/session")
@@ -73,15 +147,13 @@ async def create_chat_session(
         )
 
     session_id = str(uuid.uuid4())
-    _sessions[session_id] = {
-        "persona_id": body.persona_id,
-        "messages": [],
-    }
+    created_at = datetime.now().isoformat()
+    await _create_session(db, session_id, body.persona_id, created_at)
 
     resp = SessionResponse(
         session_id=session_id,
         persona_id=body.persona_id,
-        created_at=datetime.now().isoformat(),
+        created_at=created_at,
     )
     return {"success": True, "message": "", "data": resp.model_dump()}
 
@@ -91,11 +163,18 @@ async def send_message(
     body: ChatRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    session = _sessions.get(body.session_id)
-    if session is None:
+    try:
+        session = await _require_session(db, body.session_id)
+    except HTTPException:
         return JSONResponse(
             status_code=404,
             content={"success": False, "message": "Session not found", "data": None},
+        )
+
+    if session["persona_id"] != body.persona_id:
+        return JSONResponse(
+            status_code=400,
+            content={"success": False, "message": "Session persona mismatch", "data": None},
         )
 
     service = PersonaService(db)
@@ -138,35 +217,43 @@ async def send_message(
 
     # Post-processing task: runs after SSE stream closes, never blocks the response.
     async def _post_process(_full_reply: str):
-        try:
-            if emotion_service is not None:
-                await emotion_service.analyze_emotion(body.session_id, body.message, _full_reply)
-        except Exception as exc:
-            logger.error("Failed to analyse emotion: %s", exc)
+        async with async_session() as background_db:
+            background_session = await _get_session(background_db, body.session_id)
+            if background_session is None:
+                logger.error("Post-process skipped because session %s no longer exists", body.session_id)
+                return
 
-        try:
-            if memory_service is not None:
-                extracted = await memory_service.extract_from_conversation(body.message, _full_reply)
+            background_emotion_service = EmotionService(background_db)
+            background_memory_service = MemoryService(background_db)
+
+            try:
+                await background_emotion_service.analyze_emotion(body.session_id, body.message, _full_reply)
+            except Exception as exc:
+                logger.error("Failed to analyse emotion: %s", exc)
+
+            try:
+                extracted = await background_memory_service.extract_from_conversation(body.message, _full_reply)
                 for mem in extracted:
-                    await memory_service.add_memory(
+                    await background_memory_service.add_memory(
                         body.session_id,
                         mem["type"],
                         mem["content"],
                         mem.get("importance", 3),
                     )
-        except Exception as exc:
-            logger.error("Failed to extract or store memories: %s", exc)
+            except Exception as exc:
+                logger.error("Failed to extract or store memories: %s", exc)
 
-        try:
-            summary_service = SummaryService(db)
-            if await summary_service.should_summarize(session["messages"]):
-                summary = await summary_service.generate_summary(session["messages"])
-                if summary:
-                    session["messages"] = summary_service.apply_summary(session["messages"], summary)
-                    if memory_service is not None:
-                        await memory_service.add_memory(body.session_id, "summary", summary, 5)
-        except Exception as exc:
-            logger.error("Failed to run summary: %s", exc)
+            try:
+                summary_service = SummaryService(background_db)
+                if await summary_service.should_summarize(background_session["messages"]):
+                    summary = await summary_service.generate_summary(background_session["messages"])
+                    if summary:
+                        updated_messages = summary_service.apply_summary(background_session["messages"], summary)
+                        session["messages"] = updated_messages
+                        await _save_session_messages(background_db, body.session_id, updated_messages)
+                        await background_memory_service.add_memory(body.session_id, "summary", summary, 5)
+            except Exception as exc:
+                logger.error("Failed to run summary: %s", exc)
 
     async def stream_generator():
         full_reply = ""
@@ -238,7 +325,10 @@ async def send_message(
         session["messages"].append({"role": "user", "content": body.message})
         if full_reply:
             session["messages"].append({"role": "assistant", "content": full_reply})
+            await _save_session_messages(db, body.session_id, session["messages"])
             asyncio.create_task(_post_process(full_reply))
+        else:
+            await _save_session_messages(db, body.session_id, session["messages"])
 
         yield _sse_event({"done": True})
 
@@ -255,7 +345,9 @@ async def send_message(
 
 @router.get("/emotion/{session_id}")
 async def get_emotion_state(session_id: str, db: AsyncSession = Depends(get_db)):
-    if session_id not in _sessions:
+    try:
+        await _require_session(db, session_id)
+    except HTTPException:
         return JSONResponse(
             status_code=404,
             content={"success": False, "message": "Session not found", "data": None},
@@ -280,7 +372,9 @@ async def get_emotion_state(session_id: str, db: AsyncSession = Depends(get_db))
 
 @router.get("/emotion/{session_id}/history")
 async def get_emotion_history(session_id: str, db: AsyncSession = Depends(get_db)):
-    if session_id not in _sessions:
+    try:
+        await _require_session(db, session_id)
+    except HTTPException:
         return JSONResponse(
             status_code=404,
             content={"success": False, "message": "Session not found", "data": None},
@@ -308,6 +402,13 @@ async def get_emotion_history(session_id: str, db: AsyncSession = Depends(get_db
 
 @router.get("/memories/{session_id}")
 async def get_memories(session_id: str, type: str | None = None, db: AsyncSession = Depends(get_db)):
+    try:
+        await _require_session(db, session_id)
+    except HTTPException:
+        return JSONResponse(
+            status_code=404,
+            content={"success": False, "message": "Session not found", "data": None},
+        )
     service = MemoryService(db)
     if type:
         memories = await service.get_by_type(session_id, type)

@@ -32,7 +32,18 @@ class MemoryService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.rag_service = RAGService()
+        self._rag_service = None
+
+    def _get_rag_service(self):
+        """Lazily create a RAGService instance.
+
+        RAGService loads a ~90 MB embedding model. Deferring creation until the
+        first embed / search call prevents MemoryService construction from
+        failing the entire /chat/send endpoint when the model is unavailable.
+        """
+        if self._rag_service is None:
+            self._rag_service = RAGService()
+        return self._rag_service
 
     async def extract_from_conversation(
         self, user_message: str, ai_reply: str
@@ -102,9 +113,10 @@ class MemoryService:
             importance=importance,
         )
 
-        # Generate embedding for semantic search
+        # Generate embedding for semantic search (lazy RAGService init)
         try:
-            embedding_list = self.rag_service.encode(content)
+            rag = self._get_rag_service()
+            embedding_list = rag.encode(content)
             memory.embedding = np.array(embedding_list, dtype=np.float32).tobytes()
         except Exception as exc:
             logger.warning("Failed to generate embedding for memory: %s", exc)
@@ -138,20 +150,35 @@ class MemoryService:
     ) -> list[Memory]:
         """Semantic search over memories for a session using RAG embeddings.
 
-        Only returns memories that have non-None embeddings. Falls back to
-        keyword-based filtering if no embeddings are available.
+        Falls back to keyword-based filtering if RAGService is unavailable or
+        no embeddings exist.
         """
         all_memories = await self.get_by_session(session_id)
         memories_with_embeddings = [m for m in all_memories if m.embedding is not None]
 
         if not memories_with_embeddings:
             logger.debug(
-                "No embedded memories found for session %s; falling back to empty result.",
+                "No embedded memories found for session %s; returning empty result.",
                 session_id,
             )
             return []
 
-        return self.rag_service.search(query, memories_with_embeddings, top_k=top_k)
+        try:
+            rag = self._get_rag_service()
+            return rag.search(query, memories_with_embeddings, top_k=top_k)
+        except Exception as exc:
+            logger.warning(
+                "RAG search failed for session %s (degrading to keyword match): %s",
+                session_id,
+                exc,
+            )
+            # Degrade to simple keyword-based filtering
+            query_lower = query.lower()
+            matched = []
+            for mem in memories_with_embeddings:
+                if query_lower in mem.content.lower():
+                    matched.append(mem)
+            return matched[:top_k]
 
 
 def _parse_memory_json(raw_text: str) -> list[dict]:

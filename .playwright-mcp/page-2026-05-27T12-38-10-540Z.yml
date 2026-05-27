@@ -1,0 +1,57 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e9] [cursor=pointer]:
+    - img [ref=e10]
+  - alert [ref=e28]
+  - generic [ref=e30]:
+    - generic [ref=e31]:
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - link "返回角色选择" [ref=e35] [cursor=pointer]:
+            - /url: /personas
+            - generic [ref=e36]: ←
+            - generic [ref=e37]: 返回角色选择
+          - generic [ref=e38]:
+            - heading "小暖" [level=1] [ref=e39]
+            - paragraph [ref=e40]: 温柔体贴、善解人意
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]: 摘要待生成
+            - generic [ref=e46]: 记忆 0
+            - generic [ref=e47]: 情绪节点 0
+          - paragraph [ref=e48]: 当前还没有对话摘要，继续交流后会在洞察面板中展示总结片段。
+      - generic [ref=e50]: 向小暖发送第一条消息吧~
+      - generic [ref=e52]:
+        - textbox "输入消息..." [ref=e53]
+        - button "发送" [disabled] [ref=e54]
+    - complementary [ref=e55]:
+      - region "聊天洞察" [ref=e57]:
+        - generic [ref=e58]:
+          - generic [ref=e59]: Companion Insight
+          - generic [ref=e60]:
+            - generic [ref=e61]:
+              - heading "关系与记忆面板" [level=2] [ref=e62]
+              - paragraph [ref=e63]: 用统一组件呈现长期记忆沉淀与情绪波动轨迹，便于聊天页直接拼装和后续扩展。
+            - generic [ref=e64]:
+              - generic [ref=e65]: 记忆 0
+              - generic [ref=e66]: 情绪节点 0
+        - generic [ref=e67]:
+          - generic [ref=e68]:
+            - generic [ref=e70]:
+              - generic [ref=e71]:
+                - paragraph [ref=e72]: Memory Ledger
+                - generic [ref=e73]: 长期记忆
+              - generic [ref=e74]: 0 条
+            - generic [ref=e76]:
+              - generic [ref=e77]: ◌
+              - paragraph [ref=e78]: 暂时还没有可展示的记忆
+              - paragraph [ref=e79]: 对话深入后，这里会沉淀偏好、关系事件和摘要片段，帮助角色保持连续感。
+          - generic [ref=e80]:
+            - generic [ref=e82]:
+              - generic [ref=e83]:
+                - paragraph [ref=e84]: Emotion Timeline
+                - generic [ref=e85]: 情绪时间线
+              - generic [ref=e86]: 0 个节点
+            - generic [ref=e88]:
+              - generic [ref=e89]: ∿
+              - paragraph [ref=e90]: 还没有情绪变化记录
+              - paragraph [ref=e91]: 开始对话后，这里会按时间展示角色的好感、信任与依赖变化，以及当下心情。

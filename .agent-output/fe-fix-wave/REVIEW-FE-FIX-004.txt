@@ -1,0 +1,58 @@
+TASK-ID: FE-FIX-004  
+REVIEW-TYPE: DEEPSEEK-3-ROUND-REVIEW  
+REVIEW RESULT: PASSED
+
+说明：已按要求加载并遵守 `terminal-autonomous-execution`、`code-review`、`agent-browser` 规则。`verify` skill 在当前会话不可用，我用真实 HTTP 运行验证和浏览器 E2E 等效执行了第 2/3 轮。
+
+=== ROUND 1: STATIC ANALYSIS ===  
+STATUS: PASS-ROUND-1
+
+证据：
+- 变更范围仅见 [next.config.ts](/E:/ai-companion/frontend/next.config.ts:1)，`git diff` 显示本次 FE-FIX-004 仅改这一文件。
+- [next.config.ts:4](/E:/ai-companion/frontend/next.config.ts:4) 新增 `allowedDevOrigins: ["10.79.205.213", "127.0.0.1", "localhost"]`，与目标“允许 127.0.0.1 下的 Next dev 资源访问”一致。
+- [next.config.ts:5](/E:/ai-companion/frontend/next.config.ts:5) 到 [next.config.ts:12](/E:/ai-companion/frontend/next.config.ts:12) 保留 `/api/:path* -> http://localhost:8000/api/v1/:path*` rewrite，未见 rewrite 被删改为错误目标。
+- 未发现越权修改、未发现安全问题、未发现会直接破坏 `/api` 代理的静态配置错误。
+
+=== ROUND 2: RUNTIME VERIFICATION ===  
+STATUS: PASS-ROUND-2
+
+证据：
+- `GET http://127.0.0.1:8000/api/v1/personas` → `200`
+- `GET http://127.0.0.1:3000/api/personas` → `200`
+- 前后两者返回同一份 persona 数据，证明前端 `/api` rewrite 仍正确映射到后端 `/api/v1/*`
+- `POST http://127.0.0.1:3000/api/chat/session` → `200`
+  - 返回 `session_id: "192ad076-90d2-4d92-865b-3336d117a361"`
+- `POST http://127.0.0.1:3000/api/chat/send` → `200`
+  - `Content-Type: text/event-stream`
+  - 首个数据片段成功返回：
+    - `data: {"text":"你好呀~ 见到你，小暖心里暖暖的呢..."}`
+- `GET http://127.0.0.1:3000/api/does-not-exist` → `404`
+  - 说明 rewrite 未吞掉错误状态，失败路径也正常透传
+
+=== ROUND 3: BROWSER E2E ===  
+STATUS: PASS-ROUND-3
+
+证据：
+- 打开 `http://127.0.0.1:3000/personas` 后页面完成渲染，不存在卡在 spinner 的现象。
+- 浏览器快照直接看到页面内容：
+  - 标题“选择你的AI伴侣”
+  - 3 张角色卡片“小暖 / 小锐 / 小默”
+- 浏览器控制台：
+  - `Errors: 0`
+- 浏览器网络请求：
+  - `GET /personas` → `200`
+  - 多个 `/_next/static/*` dev 资源请求全部 `200`
+  - `GET /api/personas` → `200`
+- 点击“小暖”卡片后成功跳转：
+  - `http://127.0.0.1:3000/chat?persona_id=29e76c9e-bd51-4299-bcdf-54568a84c24d`
+- 截图留证：
+  - `./fe-fix-004-personas-page.png`
+
+最终结论：
+- `127.0.0.1` 下 Next.js dev 资源不再被拦截
+- `/personas` 不再卡 spinner
+- 现有 `/api` rewrite 未被破坏，普通 JSON 接口和 SSE 接口都工作正常
+
+ROUND 1 (Static Analysis): PASS ✅  
+ROUND 2 (Runtime Verify): PASS ✅  
+ROUND 3 (Browser E2E): PASS ✅

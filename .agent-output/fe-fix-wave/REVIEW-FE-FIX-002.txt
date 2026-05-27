@@ -1,0 +1,39 @@
+TASK-ID: FE-FIX-002  
+REVIEW-TYPE: DEEPSEEK-3-ROUND-REVIEW  
+STATUS: PASSED
+
+=== ROUND 1: STATIC ANALYSIS ===  
+STATUS: PASS-ROUND-1
+
+- TASK 范围合规。当前审查对象仅见 3 个新文件：[insight-panel.tsx](/E:/ai-companion/frontend/src/components/chat/insight-panel.tsx:1)、[emotion-history.tsx](/E:/ai-companion/frontend/src/components/chat/emotion-history.tsx:1)、[memory-list.tsx](/E:/ai-companion/frontend/src/components/chat/memory-list.tsx:1)。
+- 桌面侧栏可读性修复成立。[insight-panel.tsx](/E:/ai-companion/frontend/src/components/chat/insight-panel.tsx:69) 改为单列堆叠 `MemoryList` + `EmotionHistory`，没有继续使用此前过窄双列布局。
+- 记忆类型标签映射补齐成立。[memory-list.tsx](/E:/ai-companion/frontend/src/components/chat/memory-list.tsx:23) 已覆盖 `user_info`、`emotion`、`summary`，并补充 `user_profile`、`personal_info`、`emotional_state`、`conversation_summary` 等别名。
+- `loading / empty / error` 三态完整。
+  - 记忆组件：skeleton [memory-list.tsx](/E:/ai-companion/frontend/src/components/chat/memory-list.tsx:67)、empty [memory-list.tsx](/E:/ai-companion/frontend/src/components/chat/memory-list.tsx:93)、error [memory-list.tsx](/E:/ai-companion/frontend/src/components/chat/memory-list.tsx:111)、状态分支 [memory-list.tsx](/E:/ai-companion/frontend/src/components/chat/memory-list.tsx:168)。
+  - 情绪组件：skeleton [emotion-history.tsx](/E:/ai-companion/frontend/src/components/chat/emotion-history.tsx:47)、empty [emotion-history.tsx](/E:/ai-companion/frontend/src/components/chat/emotion-history.tsx:74)、error [emotion-history.tsx](/E:/ai-companion/frontend/src/components/chat/emotion-history.tsx:92)、状态分支 [emotion-history.tsx](/E:/ai-companion/frontend/src/components/chat/emotion-history.tsx:181)。
+- 未发现越权修改、死代码、安全风险或会直接阻断集成的逻辑缺陷。
+
+=== ROUND 2: RUNTIME VERIFICATION ===  
+STATUS: PASS-ROUND-2
+
+- `npm run build --prefix E:\ai-companion\frontend` 通过，Next.js 生产构建与 TypeScript 检查均成功。
+- 生产模式前端在 `http://127.0.0.1:3100` 正常启动并可渲染目标组件。
+- 运行时证据：
+  - 成功态下标签映射命中：`用户信息` 1 次、`Summary` 1 次。
+  - 桌面侧栏实际宽度约 `384px`，卡片宽度约 `350px`，满足侧栏可读性目标，不再是挤压双列。
+- 说明：开发态 `http://127.0.0.1:3000` 在浏览器自动化里出现 HMR WebSocket 握手异常，停留在加载兜底视图；这属于当前 dev 环境噪音，不来自本次 3 个组件代码，因此验收改用同一代码的生产构建完成。
+
+=== ROUND 3: BROWSER E2E ===  
+STATUS: PASS-ROUND-3
+
+- 桌面成功态：侧栏洞察面板正常显示，记忆卡与情绪时间线纵向排布，可读性通过。证据：[desktop](/E:/ai-companion/fe-fix-002-desktop-success.png)
+- 空态：记忆与情绪均显示明确 empty UI，没有白屏。证据：[empty](/E:/ai-companion/fe-fix-002-empty-state.png)
+- 错误态：记忆与情绪历史均显示 error UI，且带 `重新加载` 按钮。证据：[error](/E:/ai-companion/fe-fix-002-error-state.png)
+- 加载态：两块组件均出现 skeleton，占位完整。证据：[loading](/E:/ai-companion/fe-fix-002-loading-state.png)
+- 移动端：`390x844` 下聊天页可用，点击“查看洞察面板”后面板正常展开。证据：[mobile](/E:/ai-companion/fe-fix-002-mobile-success.png)
+
+ROUND 1 (Static Analysis): PASS ✅  
+ROUND 2 (Runtime Verify): PASS ✅  
+ROUND 3 (Browser E2E): PASS ✅
+
+REVIEW RESULT: PASSED

@@ -1448,3 +1448,269 @@ TASK-ID: BUG-FIX-002
 - ✔ 聊天页顶部始终可见返回 `/personas` 的入口
 - ✔ 不影响现有聊天页布局、响应式和交互
 ```
+
+---
+
+## Frontend Integration Wave 2026-05-27
+
+**目标：** 把后端已完成的记忆、情绪历史与摘要能力接入 `frontend/` 聊天页，形成可见、可验收的产品功能。
+
+### 状态一览
+
+| TASK-ID | 描述 | 关联功能 | 状态 | 分配 |
+|---------|------|----------|:----:|:----:|
+| FE-INTEGRATION-001 | 扩展前端 API 客户端，接入 memories / emotion history | 7.3, 7.7, 9.1, 9.2 | ❌ FAILED | DeepSeek |
+| FE-INTEGRATION-002 | 新建聊天洞察组件，展示记忆列表与情绪时间线 | 6.1, 7.4, 7.5, 9.2 | ❌ FAILED | DeepSeek |
+| FE-INTEGRATION-003 | 在聊天页集成洞察面板与摘要入口状态 | 6.1, 7.3, 9.1, 10.3 | ❌ FAILED | DeepSeek |
+
+### TASK FE-INTEGRATION-001：前端 API 客户端扩展
+
+```
+TASK-ID: FE-INTEGRATION-001
+名称: 前端 API 客户端扩展（memories / emotion history）
+关联: USER_FEATURE_CHECKLIST 7.3, 7.7, 9.1, 9.2
+
+目标:
+- 在前端 API 层补齐记忆与情绪历史请求能力
+- 为聊天页后续接入提供清晰、稳定的类型定义
+
+允许修改文件:
+- E:\ai-companion\frontend\src\lib\api.ts
+
+禁止修改:
+- E:\ai-companion\frontend\src\app\chat\page.tsx
+- E:\ai-companion\frontend\src\components\**
+- backend/**
+
+输出要求:
+1. 新增 MemoryItem / EmotionHistoryItem 等前端类型
+2. 新增 fetchMemories(sessionId: string, type?: string)
+3. 新增 fetchEmotionHistory(sessionId: string)
+4. 处理空数据与非 200 错误，返回结构稳定
+5. 不破坏已有 fetchPersonas / createSession / fetchEmotion / sendMessage
+
+完成标准:
+- ✔ TypeScript 编译通过
+- ✔ 能请求 `GET /api/v1/memories/{session_id}` 与 `GET /api/v1/emotion/{session_id}/history`
+- ✔ 保持 API_BASE 与现有错误处理风格一致
+```
+
+### TASK FE-INTEGRATION-002：聊天洞察组件
+
+```
+TASK-ID: FE-INTEGRATION-002
+名称: 聊天洞察组件（记忆列表 + 情绪时间线）
+关联: USER_FEATURE_CHECKLIST 6.1, 7.4, 7.5, 9.2
+
+目标:
+- 创建可复用的前端组件，用于展示长期记忆与情绪变化
+- UI 风格保持当前暖色系产品语言，不做泛化后台表格
+
+允许修改文件:
+- E:\ai-companion\frontend\src\components\chat\insight-panel.tsx    (新建)
+- E:\ai-companion\frontend\src\components\chat\emotion-history.tsx  (新建，如需)
+- E:\ai-companion\frontend\src\components\chat\memory-list.tsx      (新建，如需)
+
+禁止修改:
+- E:\ai-companion\frontend\src\app\chat\page.tsx
+- E:\ai-companion\frontend\src\lib\api.ts
+- backend/**
+
+输出要求:
+1. 展示最近记忆列表，至少显示 type / content / importance
+2. 展示情绪历史时间线，至少显示 favorability / trust / mood / dependency
+3. 包含 loading / empty / error 三种 UI 状态
+4. 组件 props 清晰，可直接被 chat page 集成
+
+完成标准:
+- ✔ 组件独立编译通过
+- ✔ 空数据时不白屏
+- ✔ 视觉上适配移动端和桌面端
+```
+
+### TASK FE-INTEGRATION-003：聊天页接入洞察面板
+
+```
+TASK-ID: FE-INTEGRATION-003
+名称: 聊天页接入记忆 / 情绪历史 / 摘要状态
+关联: USER_FEATURE_CHECKLIST 6.1, 7.3, 9.1, 10.3
+
+目标:
+- 在聊天页中接入新的前端 API 和洞察组件
+- 让用户在单页内可看到当前情绪、历史情绪、长期记忆与 summary 相关结果
+
+允许修改文件:
+- E:\ai-companion\frontend\src\app\chat\page.tsx
+
+禁止修改:
+- E:\ai-companion\frontend\src\lib\api.ts
+- E:\ai-companion\frontend\src\components\chat\**
+- backend/**
+
+输入条件:
+- FE-INTEGRATION-001 与 FE-INTEGRATION-002 完成后可直接消费其导出
+
+输出要求:
+1. 在 session 建立后拉取 memories 与 emotion history
+2. 在每轮回复完成后刷新 memories / emotion history
+3. 在聊天页中接入洞察组件，桌面端与移动端均可访问
+4. 若存在 type=`summary` 记忆，要有自然的摘要状态展示
+5. 不破坏现有聊天、流式、返回按钮、错误横幅
+
+完成标准:
+- ✔ 页面可看到记忆列表与情绪历史
+- ✔ 对话后数据会刷新
+- ✔ summary 存在时可见
+- ✔ Next.js 构建通过
+```
+
+### 返工结论（Review 失败）
+
+- FE-INTEGRATION-001 失败原因：`fetchMemories()` 与 `fetchEmotionHistory()` 吞掉非 200 错误并返回空数组，导致页面无法进入 error 状态。
+- FE-INTEGRATION-002 失败原因：组件错误态在真实链路中不可达；桌面侧栏双列布局过窄；记忆类型标签映射不完整。
+- FE-INTEGRATION-003 失败原因：当前前后端组合下 chat session 主链路返回 `Session not found`，导致洞察刷新和 summary 真实验收无法成立。
+
+---
+
+## Frontend Integration Fix Wave 2026-05-27
+
+**目标：** 修复前端集成审查发现的问题，并恢复聊天主链路后的真实洞察验收。
+
+### 状态一览
+
+| TASK-ID | 描述 | 关联 Issue | 状态 | 分配 |
+|---------|------|------------|:----:|:----:|
+| FE-FIX-001 | 修复前端 API 错误吞掉问题 | ISSUE-007 | ✅ DONE | DeepSeek |
+| FE-FIX-002 | 修复洞察组件响应式与标签映射 | ISSUE-008 | ✅ DONE | DeepSeek |
+| FE-FIX-003 | 修复 chat session 丢失导致的主链路回归 | ISSUE-009 | ✅ DONE | DeepSeek |
+
+### TASK FE-FIX-001：前端 API 错误透传
+
+```
+TASK-ID: FE-FIX-001
+名称: 修复 memories / emotion history API 错误被吞掉的问题
+关联: ISSUE-007
+
+允许修改文件:
+- E:\ai-companion\frontend\src\lib\api.ts
+
+禁止修改:
+- E:\ai-companion\frontend\src\components\chat\**
+- E:\ai-companion\frontend\src\app\chat\page.tsx
+- backend/**
+
+目标:
+- 让 `fetchMemories()` 与 `fetchEmotionHistory()` 在非 200 / 无效响应时 reject，而不是伪装成空数组
+- 保持成功路径与类型定义稳定
+
+完成标准:
+- ✔ 页面能区分 empty 与 error
+- ✔ 失败时组件 error 态可达
+- ✔ 不破坏现有成功路径
+```
+
+### TASK FE-FIX-002：洞察组件 UI 返工
+
+```
+TASK-ID: FE-FIX-002
+名称: 修复洞察组件响应式布局与记忆标签映射
+关联: ISSUE-008
+
+允许修改文件:
+- E:\ai-companion\frontend\src\components\chat\insight-panel.tsx
+- E:\ai-companion\frontend\src\components\chat\emotion-history.tsx
+- E:\ai-companion\frontend\src\components\chat\memory-list.tsx
+
+禁止修改:
+- E:\ai-companion\frontend\src\lib\api.ts
+- E:\ai-companion\frontend\src\app\chat\page.tsx
+- backend/**
+
+目标:
+- 修复桌面侧栏内组件过窄双列问题
+- 补齐 `user_info` / `emotion` 等记忆类型标签映射
+- 保持 loading / empty / error 三态完整
+
+完成标准:
+- ✔ 侧栏宽度下仍可读
+- ✔ 标签展示不退化为原始枚举
+- ✔ 浏览器验收通过
+```
+
+### TASK FE-FIX-003：chat session 主链路修复
+
+```
+TASK-ID: FE-FIX-003
+名称: 修复 chat session 创建后立即丢失的问题
+关联: ISSUE-009
+
+允许修改文件:
+- E:\ai-companion\backend\api\chat.py
+- E:\ai-companion\backend\main.py
+
+禁止修改:
+- backend/services/**
+- backend/models/**
+- frontend/**
+- frontend/src/components/chat/**
+
+目标:
+- 修复 `POST /chat/session` 成功后，`POST /chat/send` 立即返回 `Session not found` 的回归
+- 确保 emotion / history / memories 相关接口与同一 session 一致可用
+
+完成标准:
+- ✔ 创建 session 后发送消息返回正常
+- ✔ `GET /emotion/{session_id}` 与 `/history` 不再错误返回 session not found
+- ✔ 聊天主链路恢复后，前端洞察数据能真实刷新
+```
+
+### Review 结果（2026-05-27 19:46 Wave）
+
+- FE-FIX-001：三轮审查通过，错误透传与成功路径稳定性已验收。
+- FE-FIX-002：三轮审查通过，桌面/移动端洞察组件与三态 UI 已验收。
+- FE-FIX-003：初次审查被 `ISSUE-010` 阻断；在 `FE-FIX-004` 修复浏览器 E2E 环境后，重新审查三轮通过。
+
+---
+
+## Browser E2E Unblock Wave 2026-05-27
+
+**目标：** 修复前端开发环境在 `127.0.0.1:3000` 下的资源拦截问题，恢复 `/personas -> /chat` 浏览器验收闭环，并为 FE-FIX-003 重新验收创造条件。
+
+### 状态一览
+
+| TASK-ID | 描述 | 关联 Issue | 状态 | 分配 |
+|---------|------|------------|:----:|:----:|
+| FE-FIX-004 | 修复 Next.js dev allowedDevOrigins，解除 127.0.0.1 E2E 阻断 | ISSUE-010 | ✅ DONE | DeepSeek |
+| FE-FIX-IDLE-001 | 闲置 Agent | - | ⬜ TODO | DeepSeek |
+| FE-FIX-IDLE-002 | 闲置 Agent | - | ⬜ TODO | DeepSeek |
+
+### TASK FE-FIX-004：修复 127.0.0.1 开发资源拦截
+
+```
+TASK-ID: FE-FIX-004
+名称: 修复 Next.js allowedDevOrigins，解除浏览器 E2E 阻断
+关联: ISSUE-010
+
+允许修改文件:
+- E:\ai-companion\frontend\next.config.ts
+
+禁止修改:
+- E:\ai-companion\frontend\src\**
+- backend/**
+- docs/**
+
+目标:
+- 修复 `http://127.0.0.1:3000/personas` 在浏览器中因 Next.js dev 资源被拦截而停留 spinner 的问题
+- 允许浏览器从 `127.0.0.1` 正常加载 HMR / 字体等开发资源
+- 不破坏现有 `/api/:path* -> http://localhost:8000/api/v1/:path*` rewrite
+
+完成标准:
+- ✔ `http://127.0.0.1:3000/personas` 不再卡在 loading spinner
+- ✔ 浏览器能发起角色列表请求并显示 3 个角色卡片
+- ✔ 不破坏现有 dev server 启动
+```
+
+### Browser E2E Unblock 结果（2026-05-27 20:36）
+
+- FE-FIX-004：三轮审查通过，`127.0.0.1` 下 Next.js dev 资源不再被拦截，`/personas` 页面与 `/api` rewrite 均通过验证。
+- FE-FIX-003：在 FE-FIX-004 落地后重新执行三轮审查，`/personas -> /chat -> create session -> send message` 浏览器链路通过，不再出现 `Session not found`。

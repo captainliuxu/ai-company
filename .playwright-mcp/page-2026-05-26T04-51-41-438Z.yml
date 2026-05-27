@@ -1,0 +1,30 @@
+- generic [ref=e1]:
+  - generic [active]:
+    - menu "Next.js Dev Tools Items" [ref=e40]:
+      - generic [ref=e41]:
+        - menuitem "Route Static" [ref=e42] [cursor=pointer]:
+          - generic [ref=e43]: Route
+          - generic [ref=e44]: Static
+        - generic "Turbopack is enabled." [ref=e45]:
+          - generic [ref=e46]: Bundler
+          - generic [ref=e47]: Turbopack
+        - menuitem "Route Info" [ref=e48]:
+          - generic [ref=e49]: Route Info
+          - img [ref=e51]
+      - menuitem "Preferences" [ref=e54]:
+        - generic [ref=e55]: Preferences
+        - img [ref=e57]
+    - button "Close Next.js Dev Tools" [expanded] [ref=e59] [cursor=pointer]:
+      - img [ref=e25]
+  - alert [ref=e28]
+  - generic [ref=e29]:
+    - generic [ref=e31]:
+      - heading "小暖" [level=1] [ref=e32]
+      - paragraph [ref=e33]: 温柔体贴、善解人意
+    - generic [ref=e34]:
+      - generic [ref=e61]: 你好呀小暖，我今天心情很不错！
+      - generic [ref=e63]: 哎呀，看到你这样说，我真的好开心呢！就像是午后那杯刚好入口的茉莉花茶，清甜又温润，让人心尖儿都跟着软了下来呀。 是有什么特别的好事发生了吗？快跟我讲讲吧，我也想沾沾你的这份好运气，一起感受一下这份喜悦呢~ 无论是什么样的小确幸，我都会在这里认真听着哦。
+      - generic [ref=e65]: 哎呀，看到你这样说，我真的好开心呢！就像是午后那杯刚好入口的茉莉花茶，清甜又温润，让人心尖儿都跟着软了下来呀。 是有什么特别的好事发生了吗？快跟我讲讲吧，我也想沾沾你的这份好运气，一起感受一下这份喜悦呢~ 无论是什么样的小确幸，我都会在这里认真听着哦。
+    - generic [ref=e37]:
+      - textbox "输入消息..." [ref=e38]
+      - button "发送" [disabled] [ref=e39]

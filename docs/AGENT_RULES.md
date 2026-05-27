@@ -459,3 +459,54 @@ ROUND: 3 (Browser E2E)
 - DeepSeek Dev = 自动写代码（CI builder）
 - DeepSeek Review = 自动 QA + 交叉审查（测试工程师 + Code Reviewer）
 - Claude = 项目经理 + 架构师
+
+---
+
+## Phase D：用户反馈修复流程（Codex 调度）
+
+> **用户验收发现问题后，由 Codex（Orchestrator）读取 BUG_REPORTS.md，
+> 自动创建 FIX TASK，调度 Agent Team 完成全链路修复。**
+
+### 触发条件
+
+用户在 docs/BUG_REPORTS.md 中记录了新的 Bug 后，Codex 执行此流程。
+
+### 流程（6 步）
+
+`
+Step 1: Codex 读取 docs/BUG_REPORTS.md + docs/USER_FEATURE_CHECKLIST.md
+Step 2: Codex 定位受影响功能的完整链路（前端→API→Service→Model→DB）
+Step 3: Codex 创建 FIX TASK（格式：BUG-FIX-{编号}），写入 TASK_BOARD.md
+Step 4: Codex 启动 DeepSeek Dev Team（3 Agent）→ 执行 FIX TASK
+Step 5: Codex 启动 DeepSeek Review Team（3 Agent）→ 三轮递进审查
+Step 6: Codex 最终验证 → 更新 BUG_REPORTS.md 标记 ✅ 或 🔁
+`
+
+### FIX TASK 格式
+
+`
+TASK-ID: BUG-FIX-{三位编号}
+名称: 修复 BUG-{编号} — {简短描述}
+关联: 来自 docs/BUG_REPORTS.md 的 BUG-{编号}
+目标: 修复该 Bug 并验证整条功能链路不受影响
+允许修改文件: （由 Codex 分析受影响文件后指定）
+禁止修改: （不影响功能链路的其他文件）
+验收标准: 用户功能验收清单中对应编号全部通过
+`
+
+### 全链路验证范围（强制）
+
+修复任何 Bug 时，Codex 必须确保 Agent Team 验证整条链路：
+
+| 修复层级 | 验证范围 | 示例 |
+|---------|---------|------|
+| 前端组件 | 该组件所有状态（loading/empty/error/success） | 修复聊天输入框 → 还要验证 SSE 流式、情绪面板刷新 |
+| API Route | 该 Route 所有参数组合（有效/无效/缺失） | 修复 /chat/send → 还要验证 /chat/session、/emotion、/memories |
+| Service | 该 Service 所有方法 + 所有调用方 | 修复 EmotionService → 还要验证 Prompt Builder、Chat API |
+| Model | 该 Model 所有 CRUD + 所有关联查询 | 修复 Memory 模型 → 还要验证 RAG 搜索、Memory API |
+
+### 修复完成标记
+
+DeepSeek Review 全部 PASS 后，Codex 更新 docs/BUG_REPORTS.md：
+- 在对应 BUG 下方追加 ✅ 已修复 — {日期} — TASK: BUG-FIX-{编号}
+- 若修复后又引入新问题，标记 🔁 待返工 — {日期}

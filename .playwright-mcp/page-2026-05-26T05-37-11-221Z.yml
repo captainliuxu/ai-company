@@ -1,0 +1,11 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - heading "Project ready!" [level=1] [ref=e5]
+      - paragraph [ref=e6]: You may now add components and start building.
+      - paragraph [ref=e7]: We've already added the button component for you.
+      - button "Button" [ref=e8]
+    - generic [ref=e9]: (Press d to toggle dark mode)
+  - button "Open Next.js Dev Tools" [ref=e15] [cursor=pointer]:
+    - img [ref=e16]
+  - alert [ref=e19]

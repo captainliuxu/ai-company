@@ -1,0 +1,18 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e16]
+  - generic [ref=e19]:
+    - heading "选择你的AI伴侣" [level=1] [ref=e20]
+    - paragraph [ref=e21]: Choose your companion
+    - generic [ref=e22]:
+      - generic [ref=e23] [cursor=pointer]:
+        - heading "小暖" [level=2] [ref=e24]
+        - paragraph [ref=e25]: 温柔体贴、善解人意
+        - paragraph [ref=e26]: 软糯温和、多用语气词
+      - generic [ref=e27] [cursor=pointer]:
+        - heading "小锐" [level=2] [ref=e28]
+        - paragraph [ref=e29]: 理性毒舌、一针见血但不冷漠
+        - paragraph [ref=e30]: 直接利落、偶尔带刺但不伤人
+      - generic [ref=e31] [cursor=pointer]:
+        - heading "小默" [level=2] [ref=e32]
+        - paragraph [ref=e33]: 安静沉稳、话少但每句有分量
+        - paragraph [ref=e34]: 简洁、不说废话

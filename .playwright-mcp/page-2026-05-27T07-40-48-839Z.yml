@@ -1,0 +1,26 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e24] [cursor=pointer]:
+    - img [ref=e25]
+  - alert [ref=e28]
+  - generic [ref=e31]:
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - link "返回角色选择" [ref=e35] [cursor=pointer]:
+          - /url: /personas
+          - generic [ref=e36]: ←
+          - generic [ref=e37]: 返回角色选择
+        - generic [ref=e38]:
+          - heading "小暖" [level=1] [ref=e39]
+          - paragraph [ref=e40]: 温柔体贴、善解人意
+      - generic [ref=e42]:
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]: 摘要待生成
+            - generic [ref=e46]: 记忆 0
+            - generic [ref=e47]: 情绪节点 0
+          - paragraph [ref=e48]: 当前还没有对话摘要，继续交流后会在洞察面板中展示总结片段。
+        - button "查看洞察面板" [ref=e49]
+    - generic [ref=e52]: 向小暖发送第一条消息吧~
+    - generic [ref=e54]:
+      - textbox "输入消息..." [ref=e55]
+      - button "发送" [disabled] [ref=e56]

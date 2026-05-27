@@ -1,0 +1,15 @@
+**Summary**
+完成了 `FE-INTEGRATION-002`，仅新建并修改了允许范围内的 3 个组件：
+[insight-panel.tsx](E:/ai-companion/frontend/src/components/chat/insight-panel.tsx), [emotion-history.tsx](E:/ai-companion/frontend/src/components/chat/emotion-history.tsx), [memory-list.tsx](E:/ai-companion/frontend/src/components/chat/memory-list.tsx)。
+
+**What Changed**
+- `MemoryList`：提供长期记忆列表展示，包含 `type / content / importance / created_at`，并内置 `loading / empty / error` 状态、`summary` 特殊视觉、移动端友好卡片布局。
+- `EmotionHistory`：提供情绪时间线展示，包含 `favorability / trust / mood / dependency`，用时间节点 + 进度条表达变化，同样包含 `loading / empty / error` 状态和重试入口。
+- `InsightPanel`：聚合上面两个组件，暴露清晰 props，支持独立 loading/error 控制和透传定制，后续可被聊天页直接接入。
+
+**Verification**
+- `npx tsc -p E:\ai-companion\frontend\tsconfig.json --pretty false` 通过。
+- `npm run build --prefix E:\ai-companion\frontend` 未完成验证，原因是环境中已有另一个 `next build` 进程占用，报错为 `Another next build process is already running`。这不是本次新增组件的类型错误。
+
+TASK COMPLETED
+STATUS: DONE

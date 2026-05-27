@@ -1,0 +1,15 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e4]
+  - generic [ref=e20]:
+    - generic [ref=e22]:
+      - link "返回角色选择" [ref=e23] [cursor=pointer]:
+        - /url: /personas
+        - generic [ref=e24]: ←
+        - generic [ref=e25]: 返回角色选择
+      - generic [ref=e26]:
+        - heading "小暖" [level=1] [ref=e27]
+        - paragraph [ref=e28]: 温柔体贴、善解人意
+    - generic [ref=e30]: 向小暖发送第一条消息吧~
+    - generic [ref=e32]:
+      - textbox "输入消息..." [ref=e33]
+      - button "发送" [disabled] [ref=e34]

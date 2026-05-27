@@ -1,0 +1,73 @@
+INFO:     127.0.0.1:58121 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58290 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58292 - "POST /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58293 - "POST /api/v1/chat/send HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58311 - "GET /api/v1/emotion/b83a83a1-8828-4d7f-a2cf-1fab7cd9876a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58312 - "GET /api/v1/emotion/b83a83a1-8828-4d7f-a2cf-1fab7cd9876a/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58313 - "GET /api/v1/memories/b83a83a1-8828-4d7f-a2cf-1fab7cd9876a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58314 - "GET /api/v1/emotion/00000000-0000-0000-0000-000000000000 HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56099 - "GET /api/v1/emotion/b83a83a1-8828-4d7f-a2cf-1fab7cd9876a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56100 - "GET /api/v1/emotion/b83a83a1-8828-4d7f-a2cf-1fab7cd9876a/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56101 - "GET /api/v1/memories/b83a83a1-8828-4d7f-a2cf-1fab7cd9876a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58125 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62915 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57178 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55664 - "POST /api/v1/chat/session HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:55665 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50887 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50887 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55681 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59938 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54225 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54226 - "GET /api/v1/memories/nonexistent-review-session HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54910 - "POST /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55129 - "GET /api/v1/memories/366fa8f1-5f86-432b-b23b-bdc525ed88f8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55129 - "GET /favicon.ico HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:63099 - "GET /api/v1/emotion/366fa8f1-5f86-432b-b23b-bdc525ed88f8/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56572 - "GET /api/v1/memories/nonexistent-review-session HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52129 - "GET /api/v1/emotion/nonexistent-review-session/history HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:53503 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54626 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54640 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54643 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54646 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57171 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64599 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64602 - "POST /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64604 - "POST /api/v1/chat/send HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51364 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51365 - "POST /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59430 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51367 - "POST /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57088 - "GET /api/v1/emotion/b8b7649d-a6d4-4b78-861c-60fcd0c152ae/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57089 - "GET /api/v1/emotion/b8b7649d-a6d4-4b78-861c-60fcd0c152ae HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57087 - "GET /api/v1/memories/b8b7649d-a6d4-4b78-861c-60fcd0c152ae HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58567 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58565 - "GET /api/v1/emotion/851dd6f7-fa1f-43a5-b68a-746adda855c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65216 - "GET /api/v1/emotion/851dd6f7-fa1f-43a5-b68a-746adda855c5/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65218 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65219 - "GET /api/v1/memories/851dd6f7-fa1f-43a5-b68a-746adda855c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65220 - "GET /api/v1/emotion/not-a-real-session HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:65235 - "GET /api/v1/emotion/851dd6f7-fa1f-43a5-b68a-746adda855c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65236 - "GET /api/v1/emotion/851dd6f7-fa1f-43a5-b68a-746adda855c5/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65237 - "GET /api/v1/memories/851dd6f7-fa1f-43a5-b68a-746adda855c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65244 - "OPTIONS /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65245 - "OPTIONS /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65279 - "POST /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65281 - "POST /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65284 - "POST /api/v1/chat/send HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51812 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54594 - "POST /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54592 - "POST /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50925 - "GET /api/v1/memories/2432902e-d172-48a6-8c1a-0c02a38c391a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54591 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50928 - "GET /api/v1/emotion/2432902e-d172-48a6-8c1a-0c02a38c391a/history HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50929 - "GET /api/v1/emotion/2432902e-d172-48a6-8c1a-0c02a38c391a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61147 - "GET /api/v1/personas HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53987 - "POST /api/v1/chat/send HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54033 - "GET /api/v1/does-not-exist HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:54036 - "POST /api/v1/chat/session HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54039 - "POST /api/v1/chat/send HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53945 - "GET /api/v1/memories/2432902e-d172-48a6-8c1a-0c02a38c391a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53944 - "GET /api/v1/emotion/2432902e-d172-48a6-8c1a-0c02a38c391a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53946 - "GET /api/v1/emotion/2432902e-d172-48a6-8c1a-0c02a38c391a/history HTTP/1.1" 200 OK

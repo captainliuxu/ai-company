@@ -1,0 +1,19 @@
+**Summary**
+
+已按 Dev Agent 边界完成 `FE-FIX-002`，只修改了 3 个允许文件：
+[insight-panel.tsx](E:/ai-companion/frontend/src/components/chat/insight-panel.tsx:69), [emotion-history.tsx](E:/ai-companion/frontend/src/components/chat/emotion-history.tsx:59), [memory-list.tsx](E:/ai-companion/frontend/src/components/chat/memory-list.tsx:23)
+
+本次修复包括：
+- 将洞察面板主区域改为稳定单列堆叠，消除 `xl` 侧栏中的双列挤压问题。
+- 将情绪历史 skeleton 和指标区改为更适合窄容器的纵向布局，并让卡头信息可换行，避免桌面侧栏下内容拥挤。
+- 补齐记忆类型标签映射，新增 `user_info -> 用户信息`、`emotion -> 情绪`，并保留兼容别名映射。
+- `loading / empty / error` 三态分支逻辑保持不变，仅做布局层调整。
+
+**Verification**
+
+已完成以下验证：
+- `npm run build --prefix E:\ai-companion\frontend` 通过。
+- 浏览器验收通过：在 `http://localhost:3000/chat?persona_id=...` 的桌面侧栏宽度下，洞察面板为纵向单列，空态正常显示，可读性恢复。
+
+TASK COMPLETED
+STATUS: DONE

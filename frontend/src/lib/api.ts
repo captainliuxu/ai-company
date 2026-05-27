@@ -1,5 +1,11 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
+interface ApiEnvelope<T> {
+  success?: boolean;
+  message?: string;
+  data?: T | null;
+}
+
 export interface Persona {
   id: string;
   name: string;
@@ -17,35 +23,195 @@ export interface EmotionState {
   trust: number;
   mood: string;
   dependency: number;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export type MemoryType = "user_info" | "preference" | "event" | "emotion" | "summary";
+
+export interface MemoryItem {
+  id: string;
+  session_id: string;
+  type: MemoryType;
+  content: string;
+  importance: number;
+  created_at: string | null;
+}
+
+export interface EmotionHistoryItem {
+  session_id: string;
+  favorability: number;
+  trust: number;
+  mood: string;
+  dependency: number;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function readString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function readNullableString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function readNumber(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function readApiMessage(payload: unknown): string | null {
+  if (!isRecord(payload)) return null;
+  const message = payload.message;
+  return typeof message === "string" && message.trim() ? message.trim() : null;
+}
+
+async function parseApiEnvelope<T>(res: Response, fallbackMessage: string): Promise<ApiEnvelope<T>> {
+  const payload: unknown = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    const message = readApiMessage(payload) || fallbackMessage;
+    throw new Error(`${message} (${res.status})`);
+  }
+
+  if (!isRecord(payload)) {
+    throw new Error(`${fallbackMessage}：响应格式无效`);
+  }
+
+  return payload as ApiEnvelope<T>;
+}
+
+function requireEnvelopeDataRecord<T>(payload: ApiEnvelope<T>, fallbackMessage: string): Record<string, unknown> {
+  if (!isRecord(payload.data)) {
+    throw new Error(`${fallbackMessage}：响应数据无效`);
+  }
+
+  return payload.data;
+}
+
+function requireEnvelopeArrayField(
+  data: Record<string, unknown>,
+  field: string,
+  fallbackMessage: string,
+): unknown[] {
+  const value = data[field];
+  if (!Array.isArray(value)) {
+    throw new Error(`${fallbackMessage}：响应数据无效`);
+  }
+
+  return value;
+}
+
+function requireNormalizedArrayItem<T>(
+  raw: unknown,
+  index: number,
+  normalize: (value: unknown) => T | null,
+  fallbackMessage: string,
+): T {
+  const item = normalize(raw);
+  if (item === null) {
+    throw new Error(`${fallbackMessage}：第 ${index + 1} 项数据无效`);
+  }
+
+  return item;
+}
+
+function buildApiUrl(path: string, query?: URLSearchParams): string {
+  const queryString = query?.toString();
+  return queryString ? `${API_BASE}${path}?${queryString}` : `${API_BASE}${path}`;
+}
+
+function normalizeEmotionState(raw: unknown): EmotionState | null {
+  if (!isRecord(raw)) return null;
+
+  const createdAt = readNullableString(raw.created_at);
+  const updatedAt = readNullableString(raw.updated_at) ?? createdAt;
+
+  return {
+    session_id: readString(raw.session_id),
+    favorability: readNumber(raw.favorability),
+    trust: readNumber(raw.trust),
+    mood: readString(raw.mood, "neutral"),
+    dependency: readNumber(raw.dependency),
+    created_at: createdAt,
+    updated_at: updatedAt,
+  };
+}
+
+function normalizeMemoryItem(raw: unknown): MemoryItem | null {
+  if (!isRecord(raw)) return null;
+
+  return {
+    id: readString(raw.id),
+    session_id: readString(raw.session_id),
+    type: readString(raw.type) as MemoryType,
+    content: readString(raw.content),
+    importance: readNumber(raw.importance, 3),
+    created_at: readNullableString(raw.created_at),
+  };
 }
 
 export async function fetchPersonas(): Promise<Persona[]> {
-  const res = await fetch(`${API_BASE}/personas`);
-  if (!res.ok) throw new Error(`获取角色列表失败 (${res.status})`);
-  const data = await res.json();
-  return data.data.personas;
+  const res = await fetch(buildApiUrl("/personas"));
+  const payload = await parseApiEnvelope<{ personas?: Persona[] }>(res, "获取角色列表失败");
+  return Array.isArray(payload.data?.personas) ? payload.data.personas : [];
 }
 
 export async function createSession(personaId: string): Promise<string> {
-  const res = await fetch(`${API_BASE}/chat/session`, {
+  const res = await fetch(buildApiUrl("/chat/session"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ persona_id: personaId }),
   });
-  if (!res.ok) throw new Error(`创建会话失败 (${res.status})`);
-  const data = await res.json();
-  return data.data.session_id;
+  const payload = await parseApiEnvelope<{ session_id?: string }>(res, "创建会话失败");
+  const sessionId = payload.data?.session_id;
+  if (typeof sessionId !== "string" || !sessionId) {
+    throw new Error("创建会话失败：响应缺少 session_id");
+  }
+  return sessionId;
 }
 
 export async function fetchEmotion(sessionId: string): Promise<EmotionState | null> {
   try {
-    const res = await fetch(`${API_BASE}/emotion/${sessionId}`);
-    const data = await res.json();
-    return data.data || null;
+    const res = await fetch(buildApiUrl(`/emotion/${encodeURIComponent(sessionId)}`));
+    const payload = await parseApiEnvelope<unknown>(res, "获取当前情绪失败");
+    return normalizeEmotionState(payload.data);
   } catch {
     return null;
   }
+}
+
+export async function fetchMemories(sessionId: string, type?: string): Promise<MemoryItem[]> {
+  if (!sessionId) return [];
+
+  const query = new URLSearchParams();
+  if (type) {
+    query.set("type", type);
+  }
+
+  const res = await fetch(buildApiUrl(`/memories/${encodeURIComponent(sessionId)}`, query));
+  const payload = await parseApiEnvelope<{ memories?: unknown[] }>(res, "获取记忆列表失败");
+  const data = requireEnvelopeDataRecord(payload, "获取记忆列表失败");
+  const memories = requireEnvelopeArrayField(data, "memories", "获取记忆列表失败");
+  return memories.map((memory, index) =>
+    requireNormalizedArrayItem(memory, index, normalizeMemoryItem, "获取记忆列表失败"),
+  );
+}
+
+export async function fetchEmotionHistory(sessionId: string): Promise<EmotionHistoryItem[]> {
+  if (!sessionId) return [];
+
+  const res = await fetch(buildApiUrl(`/emotion/${encodeURIComponent(sessionId)}/history`));
+  const payload = await parseApiEnvelope<{ history?: unknown[] }>(res, "获取情绪历史失败");
+  const data = requireEnvelopeDataRecord(payload, "获取情绪历史失败");
+  const history = requireEnvelopeArrayField(data, "history", "获取情绪历史失败");
+  return history.map((item, index) =>
+    requireNormalizedArrayItem(item, index, normalizeEmotionState, "获取情绪历史失败"),
+  );
 }
 
 export function sendMessage(

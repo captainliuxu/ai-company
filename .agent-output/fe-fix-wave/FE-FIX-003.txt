@@ -1,0 +1,11 @@
+**修改摘要**
+在 [backend/api/chat.py](E:\ai-companion\backend\api\chat.py:59) 我把 chat session 从易失的进程内存改成 SQLite 持久化表读写，新增了 `_create_session`、`_get_session`、`_require_session`、`_save_session_messages`，并让 `POST /api/v1/chat/session`、`POST /api/v1/chat/send`、`GET /api/v1/emotion/{session_id}`、`GET /api/v1/emotion/{session_id}/history`、`GET /api/v1/memories/{session_id}` 全部走同一 session 数据源校验。`/chat/send` 还补了 `persona_id` 一致性检查，避免跨 persona 误用 session。
+
+在 [backend/api/chat.py](E:\ai-companion\backend\api\chat.py:218) 我把流式回复后的后台情绪/记忆/摘要处理切到独立 `async_session()`，避免复用请求级 `AsyncSession` 导致流结束后事务关闭竞争。[backend/main.py](E:\ai-companion\backend\main.py:16) 增加了 `chat_sessions` 表的启动初始化，确保服务启动后 session 存储可用。
+
+**验证结果**
+已运行 `python -m py_compile E:\ai-companion\backend\api\chat.py E:\ai-companion\backend\main.py`，通过。还做了最小链路验证：在应用生命周期内直接调用路由，stub 掉外部 AI 流，完成 `create session -> send message -> emotion/history/memories`，结果为同一 `session_id` 下：
+`send_ok: true`，`emotion_status: 200`（`No emotion data yet`），`history_items: 0`，`memory_items: 0`。这次验证确认了回归点已修复，`/chat/send` 不再立即返回 `Session not found`，相关查询接口也能识别同一 session。
+
+TASK COMPLETED
+STATUS: DONE

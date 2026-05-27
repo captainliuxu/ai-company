@@ -1,0 +1,58 @@
+TASK-ID: `FE-INTEGRATION-001`  
+ROLE: `Review Agent R1`  
+SCOPE: read-only review of `frontend/src/lib/api.ts`
+
+**Round 1 — Static Analysis: FAIL**
+
+Finding 1: non-200 errors for the two new fetchers are swallowed in the API layer, so callers cannot distinguish “request failed” from “empty data”.
+At [frontend/src/lib/api.ts](E:/ai-companion/frontend/src/lib/api.ts:153), `fetchMemories()` catches every exception and returns `[]`. At [frontend/src/lib/api.ts](E:/ai-companion/frontend/src/lib/api.ts:171), `fetchEmotionHistory()` does the same.  
+This conflicts with the downstream contract already assumed by [frontend/src/app/chat/page.tsx](E:/ai-companion/frontend/src/app/chat/page.tsx:105) and [frontend/src/app/chat/page.tsx](E:/ai-companion/frontend/src/app/chat/page.tsx:134), where the page expects rejected promises to drive `memoriesError` / `emotionHistoryError`.
+
+What passed statically:
+- Task scope stayed inside `frontend/src/lib/api.ts`.
+- New types were added.
+- `API_BASE` and URL building stayed consistent.
+- Existing exports were not removed.
+- `next build` passed, including TypeScript.
+
+**Round 2 — Runtime Verification: FAIL**
+
+Verified against the running app/backend on `http://localhost:3000` and `http://localhost:8000`.
+
+Observed success path:
+- `POST /api/chat/session` returned 200 and a real `session_id`.
+- `GET /api/memories/{session_id}` returned `{ data: { memories: [] } }`.
+- `GET /api/emotion/{session_id}/history` returned `{ data: { history: [] } }`.
+
+Observed failure path:
+- Backend/proxy returns 404 for invalid emotion history sessions with body `{"success":false,"message":"Session not found","data":null}`.
+- Importing the actual frontend module and calling `fetchEmotionHistory('invalid-session')` returned `[]`, not a rejected promise.
+- `fetchMemories('nonexistent-session')` also returned `[]`.
+
+Conclusion:
+- Fetch support exists.
+- Error handling is behaviorally wrong for the new APIs because failures are collapsed into empty collections.
+
+**Round 3 — Browser Verification: FAIL**
+
+Verified the user-visible path in the browser:
+- Opened `/personas`, selected a persona, landed on `/chat?persona_id=...`.
+- Chat page issued:
+  - `POST /api/chat/session`
+  - `GET /api/memories/{session_id}`
+  - `GET /api/emotion/{session_id}/history`
+  - `GET /api/emotion/{session_id}`
+
+Success path:
+- With normal 200 responses, the insight panel rendered and showed empty-state UI correctly for zero memories / zero emotion nodes.
+
+Failure-path verification:
+- Injected 404 responses for `/api/memories/*` and `/api/emotion/*/history`.
+- Browser console showed both 404s.
+- The page still rendered the same empty-state UI instead of an error state.
+
+Conclusion:
+- The new APIs are wired into the feature path.
+- User-visible error handling for these API additions is not working because the API layer hides the failure before the page can surface it.
+
+STATUS: `FAILED`

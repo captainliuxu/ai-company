@@ -1,0 +1,12 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - heading "..." [level=1] [ref=e5]
+      - paragraph
+    - generic [ref=e7]: 加载中...
+    - generic [ref=e9]:
+      - textbox "输入消息..." [ref=e10]
+      - button "发送" [disabled] [ref=e11]
+  - button "Open Next.js Dev Tools" [ref=e17] [cursor=pointer]:
+    - img [ref=e18]
+  - alert [ref=e21]

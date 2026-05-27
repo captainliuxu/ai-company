@@ -1,0 +1,26 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - link "返回角色选择" [ref=e8] [cursor=pointer]:
+          - /url: /personas
+          - generic [ref=e9]: ←
+          - generic [ref=e10]: 返回角色选择
+        - generic [ref=e11]:
+          - heading "..." [level=1] [ref=e12]
+          - paragraph
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - generic [ref=e17]: 摘要待生成
+            - generic [ref=e18]: 记忆 0
+            - generic [ref=e19]: 情绪节点 0
+          - paragraph [ref=e20]: 当前还没有对话摘要，继续交流后会在洞察面板中展示总结片段。
+        - button "查看洞察面板" [ref=e21]
+    - generic [ref=e24]: 加载中...
+    - generic [ref=e26]:
+      - textbox "输入消息..." [ref=e27]
+      - button "发送" [disabled] [ref=e28]
+  - button "Open Next.js Dev Tools" [ref=e34] [cursor=pointer]:
+    - img [ref=e35]
+  - alert [ref=e38]

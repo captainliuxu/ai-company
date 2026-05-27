@@ -1,5 +1,6 @@
 # AI Companion Pro Demo
 
+> **🚀 启动方式：见 [How to Start](#how-to-start-启动方式) · 前端入口是 `frontend/`，不是 `next-app/`（废弃）**
 > **开发入口：`PROJECT_PLAN.md`** — 所有开发活动严格按 Phase 0→8 顺序执行。
 > **Agent 流水线：`docs/AGENT_RULES.md`** — 二段式流水线（Dev 3 Agent → Review 3 轮递进审查）。
 > **任务看板：`docs/TASK_BOARD.md`** · **问题日志：`docs/ISSUES_LOG.md`**
@@ -63,6 +64,31 @@ YOLO 模式下：
 
 **禁止引入**：ChromaDB、Redis、Docker、K8s、微服务、WebSocket、LangGraph、Android/Kotlin
 
+## How to Start（启动方式）
+
+### 后端（FastAPI，端口 8000）
+
+```powershell
+pip install -r E:\ai-companion\requirements.txt
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+启动后访问 `http://localhost:8000/docs` 查看 Swagger API。
+
+### 前端（Next.js，端口 3000）
+
+```powershell
+npm install --prefix E:\ai-companion\frontend
+npm run dev --prefix E:\ai-companion\frontend
+```
+
+启动后访问 `http://localhost:3000` → 自动跳转到 `/personas` 角色选择页。
+
+### ⚠️ 重要：前端目录是 `frontend/`
+
+- **`frontend/`** = 真正的 Phase 7 聊天 UI（角色选择、聊天气泡、SSE 流式、情绪面板）
+- **`next-app/`** = ❌ 废弃空脚手架，不是本项目代码，忽略！
+
 ## Current Scope（8天内完成）
 
 1. **Persona System** — 多角色人格定义、说话风格、情绪特质
@@ -93,10 +119,11 @@ YOLO 模式下：
 ## Project Structure
 
 ```
-backend/
-├── main.py                 # FastAPI 入口
-├── config.py               # 配置
-├── api/chat.py             # 聊天路由
+backend/                          # FastAPI 后端（✅ 实际代码）
+├── main.py                       # FastAPI 入口，路由注册，CORS
+├── config.py                     # 配置：数据库、AI API、Embedding
+├── database.py                   # SQLAlchemy async engine + session
+├── api/chat.py                   # 聊天 API 路由
 ├── services/
 │   ├── persona_service.py
 │   ├── emotion_service.py
@@ -104,25 +131,38 @@ backend/
 │   ├── rag_service.py
 │   ├── prompt_builder.py
 │   ├── summary_service.py
-│   └── voice_service.py    # [FUTURE] stub
+│   └── voice_service.py          # [FUTURE] stub，未实现
 ├── models/
 │   ├── persona.py
 │   ├── memory.py
 │   └── emotion.py
 └── schemas/chat.py
 
-frontend/
-├── chat/                   # 聊天 UI
-└── avatar/                 # [FUTURE] 数字人预留
+frontend/                         # Next.js 前端（✅ 实际代码，Phase 7 产物）
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx            # 根布局，暖色主题
+│   │   ├── page.tsx              # 根页面 → 重定向到 /personas
+│   │   ├── globals.css           # TailwindCSS v4 + 暖色调 CSS 变量
+│   │   ├── personas/
+│   │   │   └── page.tsx          # 角色选择页（3 张角色卡片）
+│   │   └── chat/
+│   │       └── page.tsx          # 主聊天 UI（消息气泡、SSE 流式、情绪面板）
+│   ├── components/ui/            # shadcn/ui 组件（button, card, input）
+│   └── lib/
+│       ├── api.ts                # API 客户端（fetchPersonas, sendMessage SSE）
+│       └── utils.ts              # cn() 工具函数
+├── package.json
+├── next.config.ts
+└── tsconfig.json
 
-docs/
-├── design/                 # 产品设计
-├── architecture/           # 技术架构
-├── rules/                  # 开发规范
-├── api/                    # API 设计
-└── prompts/                # Prompt 模板
+next-app/                         # ❌ 废弃目录，空脚手架模板，不是本项目代码
+                                  #    保留仅因未清理，忽略此目录
 
-data/                       # SQLite + embedding cache
+docs/                             # 产品 + 架构 + 开发规范文档
+data/                             # SQLite 数据库 + Embedding 缓存
+
+requirements.txt                  # Python 依赖（项目根目录）
 ```
 
 ## Key References

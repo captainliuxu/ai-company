@@ -1,0 +1,57 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - link "返回角色选择" [ref=e8] [cursor=pointer]:
+          - /url: /personas
+          - generic [ref=e9]: ←
+          - generic [ref=e10]: 返回角色选择
+        - generic [ref=e11]:
+          - heading "小暖" [level=1] [ref=e12]
+          - paragraph [ref=e13]: 温柔体贴、善解人意
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - generic [ref=e18]: 摘要待生成
+            - generic [ref=e19]: 记忆 0
+            - generic [ref=e20]: 情绪节点 0
+          - paragraph [ref=e21]: 当前还没有对话摘要，继续交流后会在洞察面板中展示总结片段。
+        - button "查看洞察面板" [active] [ref=e22]
+    - region "聊天洞察" [ref=e41]:
+      - generic [ref=e42]:
+        - generic [ref=e43]: Companion Insight
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - heading "关系与记忆面板" [level=2] [ref=e46]
+            - paragraph [ref=e47]: 用统一组件呈现长期记忆沉淀与情绪波动轨迹，便于聊天页直接拼装和后续扩展。
+          - generic [ref=e48]:
+            - generic [ref=e49]: 记忆 0
+            - generic [ref=e50]: 情绪节点 0
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e54]:
+            - generic [ref=e55]:
+              - paragraph [ref=e56]: Memory Ledger
+              - generic [ref=e57]: 长期记忆
+            - generic [ref=e58]: 0 条
+          - generic [ref=e60]:
+            - generic [ref=e61]: ◌
+            - paragraph [ref=e62]: 暂时还没有可展示的记忆
+            - paragraph [ref=e63]: 对话深入后，这里会沉淀偏好、关系事件和摘要片段，帮助角色保持连续感。
+        - generic [ref=e64]:
+          - generic [ref=e66]:
+            - generic [ref=e67]:
+              - paragraph [ref=e68]: Emotion Timeline
+              - generic [ref=e69]: 情绪时间线
+            - generic [ref=e70]: 0 个节点
+          - generic [ref=e72]:
+            - generic [ref=e73]: ∿
+            - paragraph [ref=e74]: 还没有情绪变化记录
+            - paragraph [ref=e75]: 开始对话后，这里会按时间展示角色的好感、信任与依赖变化，以及当下心情。
+    - generic [ref=e25]: 向小暖发送第一条消息吧~
+    - generic [ref=e27]:
+      - textbox "输入消息..." [ref=e28]
+      - button "发送" [disabled] [ref=e29]
+  - button "Open Next.js Dev Tools" [ref=e35] [cursor=pointer]:
+    - img [ref=e36]
+  - alert [ref=e39]
