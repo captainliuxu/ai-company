@@ -48,6 +48,27 @@ export interface EmotionHistoryItem {
   updated_at: string | null;
 }
 
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatSessionSnapshot {
+  session_id: string;
+  persona_id: string;
+  created_at: string;
+  messages: ChatMessage[];
+}
+
+export interface CachedChatSessionSnapshot {
+  session_id: string;
+  persona_id: string;
+  messages: ChatMessage[];
+  updated_at: string;
+}
+
+const CHAT_SNAPSHOT_STORAGE_PREFIX = "ai-companion:chat-snapshot:";
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -83,6 +104,22 @@ async function parseApiEnvelope<T>(res: Response, fallbackMessage: string): Prom
   }
 
   return payload as ApiEnvelope<T>;
+}
+
+async function parseApiError(res: Response, fallbackMessage: string): Promise<never> {
+  const responseText = await res.text().catch(() => "");
+  let payload: unknown = null;
+
+  if (responseText) {
+    try {
+      payload = JSON.parse(responseText) as unknown;
+    } catch {
+      payload = null;
+    }
+  }
+
+  const message = readApiMessage(payload) || responseText.trim() || fallbackMessage;
+  throw new Error(`${message} (${res.status})`);
 }
 
 function requireEnvelopeDataRecord<T>(payload: ApiEnvelope<T>, fallbackMessage: string): Record<string, unknown> {
@@ -125,6 +162,67 @@ function buildApiUrl(path: string, query?: URLSearchParams): string {
   return queryString ? `${API_BASE}${path}?${queryString}` : `${API_BASE}${path}`;
 }
 
+function canUseStorage(): boolean {
+  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+}
+
+function buildChatSnapshotStorageKey(sessionId: string): string {
+  return `${CHAT_SNAPSHOT_STORAGE_PREFIX}${sessionId}`;
+}
+
+function normalizeChatMessages(raw: unknown): ChatMessage[] | null {
+  if (!Array.isArray(raw)) {
+    return null;
+  }
+
+  const messages: ChatMessage[] = [];
+  for (const item of raw) {
+    const normalized = normalizeChatMessage(item);
+    if (!normalized) {
+      return null;
+    }
+    messages.push(normalized);
+  }
+
+  return messages;
+}
+
+function isMessagePrefix(prefix: ChatMessage[], full: ChatMessage[]): boolean {
+  if (prefix.length > full.length) {
+    return false;
+  }
+
+  for (let index = 0; index < prefix.length; index += 1) {
+    const left = prefix[index];
+    const right = full[index];
+    if (left.role !== right.role || left.content !== right.content) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function normalizeCachedChatSessionSnapshot(raw: unknown): CachedChatSessionSnapshot | null {
+  if (!isRecord(raw)) return null;
+
+  const sessionId = readString(raw.session_id).trim();
+  const personaId = readString(raw.persona_id).trim();
+  const updatedAt = readString(raw.updated_at).trim();
+  const messages = normalizeChatMessages(raw.messages);
+
+  if (!sessionId || !personaId || !updatedAt || !messages) {
+    return null;
+  }
+
+  return {
+    session_id: sessionId,
+    persona_id: personaId,
+    messages,
+    updated_at: updatedAt,
+  };
+}
+
 function normalizeEmotionState(raw: unknown): EmotionState | null {
   if (!isRecord(raw)) return null;
 
@@ -155,6 +253,21 @@ function normalizeMemoryItem(raw: unknown): MemoryItem | null {
   };
 }
 
+function normalizeChatMessage(raw: unknown): ChatMessage | null {
+  if (!isRecord(raw)) return null;
+
+  const role = raw.role;
+  const content = readString(raw.content).trim();
+  if ((role !== "user" && role !== "assistant") || !content) {
+    return null;
+  }
+
+  return {
+    role,
+    content,
+  };
+}
+
 export async function fetchPersonas(): Promise<Persona[]> {
   const res = await fetch(buildApiUrl("/personas"));
   const payload = await parseApiEnvelope<{ personas?: Persona[] }>(res, "获取角色列表失败");
@@ -173,6 +286,143 @@ export async function createSession(personaId: string): Promise<string> {
     throw new Error("创建会话失败：响应缺少 session_id");
   }
   return sessionId;
+}
+
+export async function fetchSession(sessionId: string): Promise<ChatSessionSnapshot> {
+  const res = await fetch(buildApiUrl(`/chat/session/${encodeURIComponent(sessionId)}`));
+  const payload = await parseApiEnvelope<unknown>(res, "获取会话失败");
+  const data = requireEnvelopeDataRecord(payload, "获取会话失败");
+  const messages = requireEnvelopeArrayField(data, "messages", "获取会话失败");
+  const personaId = readString(data.persona_id);
+  const createdAt = readString(data.created_at);
+  const normalizedMessages = messages.map((item, index) =>
+    requireNormalizedArrayItem(item, index, normalizeChatMessage, "获取会话失败"),
+  );
+
+  if (!personaId || !createdAt) {
+    throw new Error("获取会话失败：响应数据无效");
+  }
+
+  return {
+    session_id: readString(data.session_id, sessionId),
+    persona_id: personaId,
+    created_at: createdAt,
+    messages: normalizedMessages,
+  };
+}
+
+export function readCachedSessionSnapshot(sessionId: string): CachedChatSessionSnapshot | null {
+  if (!sessionId || !canUseStorage()) {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(buildChatSnapshotStorageKey(sessionId));
+    if (!raw) {
+      return null;
+    }
+
+    return normalizeCachedChatSessionSnapshot(JSON.parse(raw) as unknown);
+  } catch {
+    return null;
+  }
+}
+
+export function writeCachedSessionSnapshot(snapshot: CachedChatSessionSnapshot): void {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(buildChatSnapshotStorageKey(snapshot.session_id), JSON.stringify(snapshot));
+  } catch {
+    // Ignore storage failures and keep network-backed recovery path available.
+  }
+}
+
+export function clearCachedSessionSnapshot(sessionId: string): void {
+  if (!sessionId || !canUseStorage()) {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(buildChatSnapshotStorageKey(sessionId));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export function mergeSessionMessages(
+  snapshotMessages: ChatMessage[],
+  cachedMessages: ChatMessage[],
+): ChatMessage[] {
+  if (!cachedMessages.length) {
+    return snapshotMessages;
+  }
+
+  if (!snapshotMessages.length) {
+    return cachedMessages;
+  }
+
+  if (isMessagePrefix(snapshotMessages, cachedMessages)) {
+    return cachedMessages;
+  }
+
+  if (isMessagePrefix(cachedMessages, snapshotMessages)) {
+    return snapshotMessages;
+  }
+
+  return snapshotMessages;
+}
+
+export async function transcribeAudio(audio: Blob | File): Promise<string> {
+  const formData = new FormData();
+  const fileName =
+    typeof File !== "undefined" && audio instanceof File && audio.name
+      ? audio.name
+      : "recording.webm";
+
+  formData.append("audio", audio, fileName);
+
+  const res = await fetch(buildApiUrl("/voice/stt"), {
+    method: "POST",
+    body: formData,
+  });
+  const payload = await parseApiEnvelope<{ text?: string }>(res, "语音转写失败");
+  const text = payload.data?.text;
+
+  if (typeof text !== "string" || !text.trim()) {
+    throw new Error("语音转写失败：响应缺少 text");
+  }
+
+  return text;
+}
+
+export async function synthesizeSpeech(
+  text: string,
+  sessionId: string,
+  personaId: string,
+): Promise<Blob> {
+  const res = await fetch(buildApiUrl("/voice/tts"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text,
+      session_id: sessionId,
+      persona_id: personaId,
+    }),
+  });
+
+  if (!res.ok) {
+    return parseApiError(res, "语音合成失败");
+  }
+
+  const audio = await res.blob().catch(() => null);
+  if (!(audio instanceof Blob) || audio.size === 0) {
+    throw new Error("语音合成失败：响应音频无效");
+  }
+
+  return audio;
 }
 
 export async function fetchEmotion(sessionId: string): Promise<EmotionState | null> {

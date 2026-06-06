@@ -1,5 +1,6 @@
 """RAG Service — semantic search over memories using sentence-transformers embeddings."""
 
+from dataclasses import dataclass
 import logging
 import os
 
@@ -18,6 +19,14 @@ logger = logging.getLogger(__name__)
 # Module-level lazy singleton — loaded once and reused across all RAGService instances.
 # This avoids re-loading the 90MB model from disk on every request.
 _model: SentenceTransformer | None = None
+
+
+@dataclass(slots=True)
+class SearchResult:
+    """Semantic search result with the matched memory and raw similarity score."""
+
+    memory: object
+    semantic_score: float
 
 
 def _load_model(model_name: str) -> SentenceTransformer:
@@ -126,6 +135,36 @@ class RAGService:
             List of Memory objects matching the query, sorted by similarity
             descending. Empty list if nothing matches.
         """
+        return [
+            result.memory
+            for result in self.search_with_scores(
+                query=query,
+                memories=memories,
+                top_k=top_k,
+                threshold=threshold,
+            )
+        ]
+
+    def search_with_scores(
+        self,
+        query: str,
+        memories: list,
+        top_k: int = RAG_TOP_K,
+        threshold: float = RAG_SIMILARITY_THRESHOLD,
+    ) -> list[SearchResult]:
+        """Search memories and include the raw semantic similarity score.
+
+        Args:
+            query: Search query text.
+            memories: List of Memory objects, each with an .embedding attribute
+                      (bytes that deserialize to a list of floats).
+            top_k: Maximum number of results to return.
+            threshold: Minimum cosine similarity score (0.0–1.0).
+
+        Returns:
+            List of SearchResult objects sorted by similarity descending.
+            Empty list if nothing matches.
+        """
         if not memories:
             logger.debug("No memories provided for search; returning empty list.")
             return []
@@ -135,7 +174,7 @@ class RAGService:
             logger.debug("Query embedding is zero-vector; returning empty list.")
             return []
 
-        scored: list[tuple[float, object]] = []
+        scored: list[SearchResult] = []
 
         for memory in memories:
             if memory.embedding is None:
@@ -162,9 +201,9 @@ class RAGService:
 
             sim = self._cosine_similarity(query_vec, mem_vec)
             if sim >= threshold:
-                scored.append((sim, memory))
+                scored.append(SearchResult(memory=memory, semantic_score=sim))
 
-        scored.sort(key=lambda item: item[0], reverse=True)
+        scored.sort(key=lambda item: item.semantic_score, reverse=True)
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -175,4 +214,4 @@ class RAGService:
                 top_k,
             )
 
-        return [mem for _sim, mem in scored[:top_k]]
+        return scored[:top_k]

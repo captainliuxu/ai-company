@@ -43,3 +43,23 @@ class ChatRequest(BaseModel):
 class ChatMessage(BaseModel):
     role: str
     content: str
+
+
+class VoiceHealthResponse(BaseModel):
+    enabled: bool
+    available: bool
+    stt_model: str
+    tts_model: str
+    tts_voice: str
+    max_upload_mb: int
+
+
+class VoiceTranscriptionResponse(BaseModel):
+    text: str
+
+
+class VoiceSynthesisRequest(BaseModel):
+    text: str
+    session_id: str | None = None
+    persona_id: str | None = None
+    voice: str | None = None
