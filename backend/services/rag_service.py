@@ -1,6 +1,8 @@
 """RAG Service — semantic search over memories using sentence-transformers embeddings."""
 
+from dataclasses import dataclass
 import logging
+import os
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -14,37 +16,79 @@ from backend.config import (
 
 logger = logging.getLogger(__name__)
 
+# Module-level lazy singleton — loaded once and reused across all RAGService instances.
+# This avoids re-loading the 90MB model from disk on every request.
+_model: SentenceTransformer | None = None
+
+
+@dataclass(slots=True)
+class SearchResult:
+    """Semantic search result with the matched memory and raw similarity score."""
+
+    memory: object
+    semantic_score: float
+
+
+def _load_model(model_name: str) -> SentenceTransformer:
+    """Load the sentence-transformers model with offline-friendly settings.
+
+    In mainland China, huggingface.co is typically unreachable. This function:
+      - Sets HF_HUB_OFFLINE=1 to force cache-only mode (no network check).
+      - Passes local_files_only=True so sentence-transformers never hits the network.
+      - Catches network errors and gives a clear message if the model is not cached.
+
+    Returns the cached SentenceTransformer instance.
+
+    Raises:
+        RuntimeError: If the model is not in the local cache and cannot be loaded.
+    """
+    global _model
+    if _model is not None:
+        return _model
+
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")
+
+    try:
+        logger.info("Loading embedding model (offline / cache-only): %s", model_name)
+        _model = SentenceTransformer(model_name, local_files_only=True)
+        logger.info("Embedding model loaded successfully: %s", model_name)
+        return _model
+    except Exception as exc:
+        logger.error(
+            "Failed to load sentence-transformers model '%s'. "
+            "In mainland China, huggingface.co is blocked. "
+            "Ensure the model has been pre-downloaded to the local cache, "
+            "or set HF_ENDPOINT to a mirror. "
+            "Error: %s",
+            model_name,
+            exc,
+        )
+        raise RuntimeError(
+            f"Failed to load embedding model '{model_name}'. "
+            f"The model must be pre-downloaded to the HuggingFace cache "
+            f"(typically ~/.cache/huggingface/hub). "
+            f"Network access to huggingface.co is disabled (HF_HUB_OFFLINE=1). "
+            f"Original error: {exc}"
+        ) from exc
+
 
 class RAGService:
     """Semantic search service using cosine similarity over embedded memories."""
 
     def __init__(self, model_name: str = EMBEDDING_MODEL):
-        """Load the sentence-transformers model.
+        """Initialise the RAG service.
+
+        The embedding model is loaded once at the module level and shared across
+        all instances — subsequent __init__ calls reuse the cached model.
 
         Args:
             model_name: HuggingFace sentence-transformers model name/id.
 
         Raises:
-            RuntimeError: If the model fails to download or load.
+            RuntimeError: If the model is not in the local cache.
         """
         self.model_name = model_name
-        try:
-            logger.info(f"Loading embedding model: {model_name}")
-            self.model = SentenceTransformer(model_name)
-            logger.info(f"Embedding model loaded successfully: {model_name}")
-        except Exception as exc:
-            logger.error(
-                "Failed to load sentence-transformers model '%s'. "
-                "Ensure the model name is correct and you have network access to download it. "
-                "Error: %s",
-                model_name,
-                exc,
-            )
-            raise RuntimeError(
-                f"Failed to load embedding model '{model_name}'. "
-                f"Check your network connection and try again. "
-                f"Original error: {exc}"
-            ) from exc
+        self.model = _load_model(model_name)
 
     def encode(self, text: str) -> list[float]:
         """Generate a 384-dimensional embedding for the given text.
@@ -91,6 +135,36 @@ class RAGService:
             List of Memory objects matching the query, sorted by similarity
             descending. Empty list if nothing matches.
         """
+        return [
+            result.memory
+            for result in self.search_with_scores(
+                query=query,
+                memories=memories,
+                top_k=top_k,
+                threshold=threshold,
+            )
+        ]
+
+    def search_with_scores(
+        self,
+        query: str,
+        memories: list,
+        top_k: int = RAG_TOP_K,
+        threshold: float = RAG_SIMILARITY_THRESHOLD,
+    ) -> list[SearchResult]:
+        """Search memories and include the raw semantic similarity score.
+
+        Args:
+            query: Search query text.
+            memories: List of Memory objects, each with an .embedding attribute
+                      (bytes that deserialize to a list of floats).
+            top_k: Maximum number of results to return.
+            threshold: Minimum cosine similarity score (0.0–1.0).
+
+        Returns:
+            List of SearchResult objects sorted by similarity descending.
+            Empty list if nothing matches.
+        """
         if not memories:
             logger.debug("No memories provided for search; returning empty list.")
             return []
@@ -100,7 +174,7 @@ class RAGService:
             logger.debug("Query embedding is zero-vector; returning empty list.")
             return []
 
-        scored: list[tuple[float, object]] = []
+        scored: list[SearchResult] = []
 
         for memory in memories:
             if memory.embedding is None:
@@ -127,9 +201,9 @@ class RAGService:
 
             sim = self._cosine_similarity(query_vec, mem_vec)
             if sim >= threshold:
-                scored.append((sim, memory))
+                scored.append(SearchResult(memory=memory, semantic_score=sim))
 
-        scored.sort(key=lambda item: item[0], reverse=True)
+        scored.sort(key=lambda item: item.semantic_score, reverse=True)
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
@@ -140,4 +214,4 @@ class RAGService:
                 top_k,
             )
 
-        return [mem for _sim, mem in scored[:top_k]]
+        return scored[:top_k]

@@ -2,13 +2,33 @@
 
 import json
 import logging
+import math
+from datetime import datetime, timezone
 
 import httpx
 import numpy as np
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.config import AI_API_KEY, AI_BASE_URL, AI_MODEL
+from backend.config import (
+    AI_API_KEY,
+    AI_BASE_URL,
+    AI_MODEL,
+    MEMORY_MAX_EMOTION_RESULTS,
+    MEMORY_MAX_SUMMARY_RESULTS,
+    MEMORY_RECENCY_HALFLIFE_DAYS,
+    MEMORY_SEARCH_TOP_K,
+    MEMORY_SEMANTIC_THRESHOLD,
+    MEMORY_TYPE_WEIGHT_EMOTION,
+    MEMORY_TYPE_WEIGHT_EVENT,
+    MEMORY_TYPE_WEIGHT_PREFERENCE,
+    MEMORY_TYPE_WEIGHT_SUMMARY,
+    MEMORY_TYPE_WEIGHT_USER_INFO,
+    MEMORY_WEIGHT_IMPORTANCE,
+    MEMORY_WEIGHT_RECENCY,
+    MEMORY_WEIGHT_SEMANTIC,
+    MEMORY_WEIGHT_TYPE,
+)
 from backend.models.memory import Memory
 from backend.services.rag_service import RAGService
 
@@ -32,7 +52,44 @@ class MemoryService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.rag_service = RAGService()
+        self._rag_service = None
+
+    def _get_rag_service(self):
+        """Lazily create a RAGService instance.
+
+        RAGService loads a ~90 MB embedding model. Deferring creation until the
+        first embed / search call prevents MemoryService construction from
+        failing the entire /chat/send endpoint when the model is unavailable.
+        """
+        if self._rag_service is None:
+            self._rag_service = RAGService()
+        return self._rag_service
+
+    def _get_search_weights(self) -> dict[str, float]:
+        """Return hybrid search weights from application config."""
+        return {
+            "semantic": float(MEMORY_WEIGHT_SEMANTIC),
+            "importance": float(MEMORY_WEIGHT_IMPORTANCE),
+            "recency": float(MEMORY_WEIGHT_RECENCY),
+            "type_weight": float(MEMORY_WEIGHT_TYPE),
+        }
+
+    def _get_type_weights(self) -> dict[str, float]:
+        """Return per-memory-type ranking weights from application config."""
+        return {
+            "user_info": float(MEMORY_TYPE_WEIGHT_USER_INFO),
+            "preference": float(MEMORY_TYPE_WEIGHT_PREFERENCE),
+            "event": float(MEMORY_TYPE_WEIGHT_EVENT),
+            "emotion": float(MEMORY_TYPE_WEIGHT_EMOTION),
+            "summary": float(MEMORY_TYPE_WEIGHT_SUMMARY),
+        }
+
+    def _get_type_result_caps(self) -> dict[str, int]:
+        """Return per-memory-type result caps from application config."""
+        return {
+            "summary": int(MEMORY_MAX_SUMMARY_RESULTS),
+            "emotion": int(MEMORY_MAX_EMOTION_RESULTS),
+        }
 
     async def extract_from_conversation(
         self, user_message: str, ai_reply: str
@@ -102,9 +159,10 @@ class MemoryService:
             importance=importance,
         )
 
-        # Generate embedding for semantic search
+        # Generate embedding for semantic search (lazy RAGService init)
         try:
-            embedding_list = self.rag_service.encode(content)
+            rag = self._get_rag_service()
+            embedding_list = rag.encode(content)
             memory.embedding = np.array(embedding_list, dtype=np.float32).tobytes()
         except Exception as exc:
             logger.warning("Failed to generate embedding for memory: %s", exc)
@@ -132,26 +190,191 @@ class MemoryService:
         )
         return list(result.scalars().all())
 
-
     async def search_memories(
-        self, session_id: str, query: str, top_k: int = 5
-    ) -> list[Memory]:
-        """Semantic search over memories for a session using RAG embeddings.
+        self,
+        session_id: str,
+        query: str,
+        top_k: int = MEMORY_SEARCH_TOP_K,
+        return_debug_scores: bool = False,
+    ) -> list[Memory] | list[dict]:
+        """Hybrid search over memories for a session using semantic + heuristics.
 
-        Only returns memories that have non-None embeddings. Falls back to
-        keyword-based filtering if no embeddings are available.
+        Falls back to keyword-based filtering if RAGService is unavailable or
+        no embeddings exist. When ``return_debug_scores`` is True, returns
+        scored payloads instead of bare Memory objects for internal debugging.
         """
         all_memories = await self.get_by_session(session_id)
         memories_with_embeddings = [m for m in all_memories if m.embedding is not None]
 
         if not memories_with_embeddings:
             logger.debug(
-                "No embedded memories found for session %s; falling back to empty result.",
+                "No embedded memories found for session %s; returning empty result.",
                 session_id,
             )
             return []
 
-        return self.rag_service.search(query, memories_with_embeddings, top_k=top_k)
+        try:
+            rag = self._get_rag_service()
+            query_vec = np.array(rag.encode(query), dtype=np.float32)
+            if not np.any(query_vec):
+                logger.debug(
+                    "Query embedding is zero-vector for session %s; returning empty result.",
+                    session_id,
+                )
+                return []
+
+            scored = []
+            search_weights = self._get_search_weights()
+            type_weights = self._get_type_weights()
+            for memory in memories_with_embeddings:
+                hybrid_score = self._score_memory_candidate(
+                    memory=memory,
+                    query_vec=query_vec,
+                    search_weights=search_weights,
+                    type_weights=type_weights,
+                    return_debug_scores=return_debug_scores,
+                )
+                if hybrid_score is None:
+                    continue
+                scored.append(hybrid_score)
+
+            ranked_memories = self._select_ranked_memories(scored, top_k=top_k)
+            if return_debug_scores:
+                return ranked_memories
+            return [item["memory"] for item in ranked_memories]
+        except Exception as exc:
+            logger.warning(
+                "RAG search failed for session %s (degrading to keyword match): %s",
+                session_id,
+                exc,
+            )
+            # Degrade to simple keyword-based filtering
+            query_lower = query.lower()
+            matched = []
+            for mem in memories_with_embeddings:
+                if query_lower in mem.content.lower():
+                    matched.append(mem)
+            return matched[:top_k]
+
+    def _score_memory_candidate(
+        self,
+        memory: Memory,
+        query_vec: np.ndarray,
+        search_weights: dict[str, float],
+        type_weights: dict[str, float],
+        return_debug_scores: bool = False,
+    ) -> dict | None:
+        """Return hybrid score payload for a memory, or None if it is filtered out."""
+        try:
+            mem_vec = np.frombuffer(memory.embedding, dtype=np.float32)
+        except (ValueError, TypeError) as exc:
+            logger.warning(
+                "Failed to deserialize embedding for memory %s: %s",
+                getattr(memory, "id", "?"),
+                exc,
+            )
+            return None
+
+        if mem_vec.shape != query_vec.shape:
+            logger.warning(
+                "Memory %s has embedding dim %d, expected %d; skipping.",
+                getattr(memory, "id", "?"),
+                mem_vec.shape[0],
+                query_vec.shape[0],
+            )
+            return None
+
+        semantic_score = self._cosine_similarity(query_vec, mem_vec)
+        semantic_threshold = float(MEMORY_SEMANTIC_THRESHOLD)
+        if semantic_score < semantic_threshold:
+            return None
+
+        importance_score = max(0.0, min(float(memory.importance) / 5.0, 1.0))
+        recency_score = self._calculate_recency_score(memory.created_at)
+        type_score = type_weights.get(memory.type, 0.75)
+
+        hybrid_score = (
+            semantic_score * search_weights["semantic"]
+            + importance_score * search_weights["importance"]
+            + recency_score * search_weights["recency"]
+            + type_score * search_weights["type_weight"]
+        )
+
+        payload = {
+            "memory": memory,
+            "hybrid_score": hybrid_score,
+            "semantic_score": semantic_score,
+            "importance_score": importance_score,
+            "recency_score": recency_score,
+            "type_score": type_score,
+        }
+
+        if return_debug_scores:
+            payload["weights"] = search_weights.copy()
+            payload["thresholds"] = {
+                "semantic": semantic_threshold,
+                "recency_halflife_days": float(MEMORY_RECENCY_HALFLIFE_DAYS),
+            }
+            payload["type_weights"] = type_weights.copy()
+            payload["type_caps"] = self._get_type_result_caps()
+
+        return payload
+
+    def _select_ranked_memories(
+        self, scored_memories: list[dict], top_k: int
+    ) -> list[dict]:
+        """Apply final sorting and per-type caps to scored memories."""
+        ranked = sorted(
+            scored_memories,
+            key=lambda item: (
+                item["hybrid_score"],
+                item["semantic_score"],
+                item["importance_score"],
+                item["recency_score"],
+            ),
+            reverse=True,
+        )
+
+        selected = []
+        type_counts: dict[str, int] = {}
+        type_caps = self._get_type_result_caps()
+
+        for item in ranked:
+            memory_type = item["memory"].type
+            max_allowed = type_caps.get(memory_type)
+            current_count = type_counts.get(memory_type, 0)
+
+            if max_allowed is not None and current_count >= max_allowed:
+                continue
+
+            selected.append(item)
+            type_counts[memory_type] = current_count + 1
+
+            if len(selected) >= top_k:
+                break
+
+        return selected
+
+    def _cosine_similarity(self, a: np.ndarray, b: np.ndarray) -> float:
+        """Compute cosine similarity between two numpy arrays."""
+        norm_a = np.linalg.norm(a)
+        norm_b = np.linalg.norm(b)
+        if norm_a == 0.0 or norm_b == 0.0:
+            return 0.0
+        return float(np.dot(a, b) / (norm_a * norm_b))
+
+    def _calculate_recency_score(self, created_at: datetime | None) -> float:
+        """Convert age to a 0-1 score using the configured half-life."""
+        if created_at is None:
+            return 0.0
+
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+
+        now = datetime.now(timezone.utc)
+        age_seconds = max((now - created_at).total_seconds(), 0.0)
+        age_days = age_seconds / 86400.0
+        return math.pow(0.5, age_days / float(MEMORY_RECENCY_HALFLIFE_DAYS))
 
 
 def _parse_memory_json(raw_text: str) -> list[dict]:
