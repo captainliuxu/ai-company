@@ -1,0 +1,4 @@
+- generic [ref=e3]:
+  - paragraph [ref=e4]: 缺少角色ID
+  - link "返回角色选择" [ref=e5] [cursor=pointer]:
+    - /url: /personas

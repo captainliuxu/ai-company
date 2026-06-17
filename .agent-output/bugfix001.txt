@@ -1,0 +1,21 @@
+**Scope**
+仅执行了 `BUG-FIX-001`，且只修改了 [api.ts](/E:/ai-companion/frontend/src/lib/api.ts:62) 和 [chat.py](/E:/ai-companion/backend/api/chat.py:27)。
+
+**Changes**
+- 前端 SSE 客户端在 [api.ts](/E:/ai-companion/frontend/src/lib/api.ts:62) 加了单一 `finish()` 收口，保证 `onDone` 只触发一次，避免 `done`、尾包、异常、`AbortError` 多路径重复回调导致状态错乱。
+- 前端在 [api.ts](/E:/ai-companion/frontend/src/lib/api.ts:71) 改成更稳健的 SSE 解析：兼容 `\r\n`、处理残留 tail、识别 `[DONE]`、忽略坏帧但不中断流，并在结束时主动 `reader.cancel()` 释放读取器。
+- 后端在 [chat.py](/E:/ai-companion/backend/api/chat.py:27) 统一了 SSE 输出格式；在 [chat.py](/E:/ai-companion/backend/api/chat.py:171) 给流式主路径加了异常收口，AI HTTP 错误、流中断、坏 JSON 帧都会显式发 `error/done`，前端不会一直卡在 disabled。
+- 后端在 [chat.py](/E:/ai-companion/backend/api/chat.py:238) 调整了消息落库时机：正常流结束后先写入用户消息；只有拿到非空 AI 回复才追加 assistant 并触发异步后处理，避免空 assistant 回复污染会话。
+
+**Verification**
+- `python -m py_compile E:\ai-companion\backend\api\chat.py` 通过。
+- `npm exec --prefix E:\ai-companion\frontend -- tsc -p E:\ai-companion\frontend\tsconfig.json --noEmit` 通过。
+- 未跑真实前后端联调和浏览器多轮发送验证；这一步依赖本地服务与实际 AI 流式返回。
+
+**Expected Outcome**
+- 连续发送时，SSE 正常完成、异常完成、空尾包完成都能释放输入框和按钮。
+- 后端即使遇到上游流异常，也会发出可识别的结束信号，不再把前端留在永久 `disabled`。
+- 失败回调只会在真实错误路径触发，减少误判导致的本地消息回滚。
+
+TASK COMPLETED
+STATUS: DONE

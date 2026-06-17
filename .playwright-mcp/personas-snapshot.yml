@@ -1,0 +1,20 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - heading "选择你的AI伴侣" [level=1] [ref=e5]
+    - paragraph [ref=e6]: Choose your companion
+    - generic [ref=e7]:
+      - generic [ref=e8] [cursor=pointer]:
+        - heading "小暖" [level=2] [ref=e9]
+        - paragraph [ref=e10]: 温柔体贴、善解人意
+        - paragraph [ref=e11]: 软糯温和、多用语气词
+      - generic [ref=e12] [cursor=pointer]:
+        - heading "小锐" [level=2] [ref=e13]
+        - paragraph [ref=e14]: 理性毒舌、一针见血但不冷漠
+        - paragraph [ref=e15]: 直接利落、偶尔带刺但不伤人
+      - generic [ref=e16] [cursor=pointer]:
+        - heading "小默" [level=2] [ref=e17]
+        - paragraph [ref=e18]: 安静沉稳、话少但每句有分量
+        - paragraph [ref=e19]: 简洁、不说废话
+  - button "Open Next.js Dev Tools" [ref=e25] [cursor=pointer]:
+    - img [ref=e26]
+  - alert [ref=e4]

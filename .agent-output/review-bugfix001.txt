@@ -1,0 +1,25 @@
+TASK-ID: `BUG-FIX-001`
+
+ROUND 1: `PASS`
+- 审查范围已锁定到 [frontend/src/lib/api.ts](</E:/ai-companion/frontend/src/lib/api.ts:1>) 和 [backend/api/chat.py](</E:/ai-companion/backend/api/chat.py:89>)。当前工作区确实还有很多其他未合并差异，包括任务禁止修改的 `frontend/src/app/chat/page.tsx`，但本轮静态分析只按 `BUG-FIX-001` 允许文件审查。
+- [frontend/src/lib/api.ts](</E:/ai-companion/frontend/src/lib/api.ts:51>) 的 SSE 客户端现在会统一处理 `done`、`[DONE]`、非 200、流读取失败、Abort 和畸形帧，并保证 `onDone` 只收敛一次，不会把输入框永久卡在 disabled。
+- [backend/api/chat.py](</E:/ai-companion/backend/api/chat.py:171>) 现在把情绪/记忆/摘要后处理移出主流式路径，并在成功、上游 HTTP 异常、意外异常三类路径下都明确返回终止帧，符合 BUG-001 的修复方向。
+- 未发现会阻断 `BUG-001` 修复的静态问题。
+
+ROUND 2: `PASS`
+- 运行时验证使用 `http://127.0.0.1:8000/api/v1` 直接测接口。
+- 创建会话成功：HTTP `200`。
+- 同一会话连续发送两条消息，两个 `/chat/send` 请求都返回 HTTP `200`，都收到明确 `done: true` 终止信号，无 `error` 字段。
+- 第 1 条回复收到 `4` 个文本分片；第 2 条回复收到 `2` 个文本分片。第二次发送后没有复现“AI 不再回复”的卡死。
+
+ROUND 3: `PASS`
+- 浏览器 E2E 使用隔离的 Playwright 实例完成。原有 `3000` 前端进程处于异常 dev 状态并长期停在 loading，我重启了一个干净实例后继续验收；这属于环境噪音，不是本次代码回归。
+- 复现路径：`/personas` 选择“小暖” → 进入 `/chat?persona_id=...` → 连续发送两条消息。
+- 第 1 次发送：输入框先 disabled，回复完成后重新 enabled，页面新增用户消息和 AI 回复，无错误横幅。
+- 第 2 次发送：再次先 disabled，再恢复 enabled，页面继续追加第二轮 AI 回复，无卡死、无错误横幅。
+- E2E 截图：`E:\ai-companion\.agent-output\review-r1-chat-e2e.png`
+
+结论：
+- `BUG-001` 在当前可运行代码状态下已修复，未观察到由本任务引入的聊天/SSE 回归。
+
+STATUS: `PASSED`

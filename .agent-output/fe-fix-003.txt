@@ -1,0 +1,15 @@
+Summary:
+- Moved chat session storage out of module-global `_sessions` and into `app.state.chat_sessions`, initialized in [backend/main.py](/E:/ai-companion/backend/main.py:18). This gives all chat routes a single app-scoped session store instead of relying on a fragile import-level dict.
+- Updated [backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:58) to use shared helpers for session lookup, so `POST /chat/session`, `POST /chat/send`, `GET /emotion/{session_id}`, `GET /emotion/{session_id}/history`, and `GET /memories/{session_id}` all resolve the same session lifecycle.
+- Added a `session_id`/`persona_id` consistency check in `POST /chat/send` so a valid session cannot be used with the wrong persona payload.
+
+Verification:
+- Ran an in-process API verification script against the FastAPI app with the external AI stream stubbed.
+- Confirmed `create session -> send message -> emotion -> history -> memories` all returned `200` for the same `session_id`.
+- Confirmed the sent message and assistant reply were persisted back into the same stored session.
+
+Notes:
+- The verification script had to stub the post-processing services because there is a separate existing background-task/db-session issue after streaming completes. That is outside the allowed files and outside `FE-FIX-003`, but the session regression itself is fixed.
+
+TASK COMPLETED
+STATUS: DONE

@@ -1,0 +1,6 @@
+修改摘要：仅更新了 [frontend/next.config.ts](/abs/path/E:/ai-companion/frontend/next.config.ts)，把 `allowedDevOrigins` 从 `["10.79.205.213"]` 补齐为 `["10.79.205.213", "127.0.0.1", "localhost"]`，并保留现有 `/api/:path* -> http://localhost:8000/api/v1/:path*` rewrite 不变。该写法符合 Next.js 官方 `allowedDevOrigins` 配置说明：<https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins>。
+
+验证结果：我直接访问了 `http://127.0.0.1:3000/personas`，页面已正常渲染角色选择内容，不再停留在 loading spinner。浏览器网络检查显示关键开发资源均返回 `200`，包括 HMR 客户端脚本、`_next/static` 资源、字体 `woff2` 文件，以及 `/api/personas` 请求；控制台错误为 `0`。额外启动的临时验证日志已清理，当前仅保留授权文件的修改。
+
+TASK COMPLETED
+STATUS: DONE

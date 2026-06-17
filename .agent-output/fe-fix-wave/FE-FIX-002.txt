@@ -1,0 +1,14 @@
+修改摘要：
+
+在 [insight-panel.tsx](/E:/ai-companion/frontend/src/components/chat/insight-panel.tsx:47) 我把顶部说明区从依赖视口断点的横向排布改成稳定纵向排布，避免桌面 `xl` 侧栏里因为容器只有约 `24rem` 而被强行挤成难读布局。
+
+在 [emotion-history.tsx](/E:/ai-companion/frontend/src/components/chat/emotion-history.tsx:47) 和 [memory-list.tsx](/E:/ai-companion/frontend/src/components/chat/memory-list.tsx:67) 我把会受窄容器影响的头部、骨架屏、条目元信息都改成更稳的纵向/可换行结构，并去掉基于视口放大的 `md:p-5` 内容内边距，保证移动端和桌面侧栏都更可读。`loading / empty / error` 三态分支仍完整保留，见 [emotion-history.tsx](/E:/ai-companion/frontend/src/components/chat/emotion-history.tsx:180) 与 [memory-list.tsx](/E:/ai-companion/frontend/src/components/chat/memory-list.tsx:167)。
+
+另外在 [memory-list.tsx](/E:/ai-companion/frontend/src/components/chat/memory-list.tsx:23) 补强了记忆类型标签映射，并加了归一化处理，除了 `user_info`、`emotion` 外，也覆盖了 `user_profile`、`personal_info`、`preferences`、`emotional_state`、`conversation_summary` 等别名形式。
+
+验证结果：
+
+`npm run build --prefix E:\ai-companion\frontend` 通过，Next.js 生产构建和 TypeScript 检查均成功。唯一输出是既有的 Turbopack workspace root warning，与本次改动无关。
+
+TASK COMPLETED  
+STATUS: DONE

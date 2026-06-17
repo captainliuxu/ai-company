@@ -1,0 +1,17 @@
+**Scope**
+仅修改了 [api.ts](/E:/ai-companion/frontend/src/lib/api.ts:1)，符合 Dev Agent 边界和任务文件限制。
+
+**Completed**
+- 新增前端类型：`MemoryType`、`MemoryItem`、`EmotionHistoryItem`。
+- 补齐 `fetchMemories(sessionId, type?)` 和 `fetchEmotionHistory(sessionId)`。
+- 抽出统一的响应解析与错误消息处理：`ApiEnvelope`、`parseApiEnvelope()`、`buildApiUrl()`。
+- 为情绪数据增加规范化处理，兼容后端返回的 `created_at`，并保留前端已有 `updated_at` 字段以避免现有调用受影响。
+- 对 memories / emotion history 的空数据、无效结构、非 200 响应做了稳定返回处理：新接口失败时返回 `[]`，`fetchEmotion()` 继续返回 `null`，未破坏既有行为。
+
+**Verification**
+- 执行 `npm run build --prefix E:\ai-companion\frontend`
+- 结果：`next build` 和 TypeScript 检查通过
+- 备注：构建仅提示 Next.js workspace root / 多个 lockfile 警告，不影响本任务代码通过
+
+TASK COMPLETED
+STATUS: DONE

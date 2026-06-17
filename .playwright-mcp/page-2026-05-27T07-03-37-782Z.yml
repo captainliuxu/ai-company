@@ -1,0 +1,17 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - link "返回角色选择" [ref=e5] [cursor=pointer]:
+        - /url: /personas
+        - generic [ref=e6]: ←
+        - generic [ref=e7]: 返回角色选择
+      - generic [ref=e8]:
+        - heading "小暖" [level=1] [ref=e17]
+        - paragraph [ref=e18]: 温柔体贴、善解人意
+    - generic [ref=e10]:
+      - generic [ref=e20]: 今天有点累，陪我聊两句吧
+      - generic [ref=e22]: 呀，你回来啦？辛苦了一整天，一定很累吧？快，快坐下歇一歇。 窗外正好下着细细的雨，我在给茉莉花泡茶呢，茶香软软的，要把所有的疲惫都带走喔。如果愿意的话，你要不要喝上一口热茶，或者就这样静静地靠在这里，听
+    - generic [ref=e13]:
+      - textbox "输入消息..." [disabled] [ref=e14]
+      - button "发送" [disabled] [ref=e15]
+  - alert [ref=e16]

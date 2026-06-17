@@ -1,0 +1,53 @@
+
+> ai-companionfrontend@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.19.0.1:3000
+✓ Ready in 440ms
+
+ GET /personas 200 in 544ms (next.js: 404ms, application-code: 140ms)
+ GET / 307 in 200ms (next.js: 97ms, application-code: 103ms)
+ GET /personas 200 in 169ms (next.js: 3ms, application-code: 165ms)
+ GET /personas 200 in 34ms (next.js: 4ms, application-code: 30ms)
+ GET / 307 in 103ms (next.js: 4ms, application-code: 99ms)
+ GET /personas 200 in 271ms (next.js: 4ms, application-code: 267ms)
+ GET / 307 in 46ms (next.js: 3ms, application-code: 43ms)
+ GET /personas 200 in 29ms (next.js: 3ms, application-code: 26ms)
+ GET / 307 in 46ms (next.js: 3ms, application-code: 43ms)
+ GET /personas 200 in 40ms (next.js: 13ms, application-code: 28ms)
+ GET /personas 200 in 34ms (next.js: 3ms, application-code: 31ms)
+ GET /personas 200 in 27ms (next.js: 2ms, application-code: 25ms)
+ GET /personas 200 in 31ms (next.js: 4ms, application-code: 28ms)
+ GET /personas 200 in 29ms (next.js: 2ms, application-code: 27ms)
+ GET /personas 200 in 28ms (next.js: 3ms, application-code: 25ms)
+ GET /personas 200 in 25ms (next.js: 2ms, application-code: 23ms)
+ GET /personas 200 in 24ms (next.js: 2ms, application-code: 22ms)
+ GET /personas 200 in 26ms (next.js: 2ms, application-code: 24ms)
+ GET /personas 200 in 25ms (next.js: 2ms, application-code: 23ms)
+ GET /personas 200 in 25ms (next.js: 2ms, application-code: 23ms)
+ GET /personas 200 in 24ms (next.js: 2ms, application-code: 22ms)
+ GET /personas 200 in 25ms (next.js: 1964µs, application-code: 23ms)
+ GET /personas 200 in 24ms (next.js: 2ms, application-code: 21ms)
+ GET /personas 200 in 25ms (next.js: 3ms, application-code: 22ms)
+ GET /personas 200 in 26ms (next.js: 3ms, application-code: 23ms)
+ GET /personas 200 in 26ms (next.js: 3ms, application-code: 23ms)
+ GET /personas 200 in 24ms (next.js: 2ms, application-code: 22ms)
+ GET /personas 200 in 25ms (next.js: 3ms, application-code: 22ms)
+ GET /personas 200 in 26ms (next.js: 2ms, application-code: 23ms)
+ GET /personas 200 in 26ms (next.js: 2ms, application-code: 24ms)
+ GET /personas 200 in 26ms (next.js: 2ms, application-code: 23ms)
+ GET /personas 200 in 25ms (next.js: 3ms, application-code: 22ms)
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.19.0.1:3000
+✓ Ready in 449ms
+
+ GET /personas 200 in 359ms (next.js: 216ms, application-code: 143ms)
+ GET /personas 200 in 46ms (next.js: 4ms, application-code: 41ms)
+ GET /personas 200 in 28ms (next.js: 2ms, application-code: 25ms)
+ GET /personas 200 in 41ms (next.js: 3ms, application-code: 37ms)
+ GET /chat?persona_id=29e76c9e-bd51-4299-bcdf-54568a84c24d 200 in 64ms (next.js: 31ms, application-code: 33ms)
+ GET /personas 200 in 49ms (next.js: 5ms, application-code: 43ms)
+ GET /chat?persona_id=29e76c9e-bd51-4299-bcdf-54568a84c24d 200 in 21ms (next.js: 4ms, application-code: 17ms)

@@ -1,0 +1,4 @@
+[   15996ms] [LOG] [WebSocket] createSocket... @ https://api.xykjy.com/admin/assets/index-ByxzfdIC.js:86593
+[   15996ms] [ERROR] [WebSocket] 用户未登录，稍后重试... @ https://api.xykjy.com/admin/assets/index-ByxzfdIC.js:86594
+[   15996ms] [LOG] [WebSocket] lockReconnect:false @ https://api.xykjy.com/admin/assets/index-ByxzfdIC.js:86606
+[   16144ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ https://api.xykjy.com/admin#/login?redirect=/dashboard:0

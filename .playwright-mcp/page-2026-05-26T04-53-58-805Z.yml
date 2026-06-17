@@ -1,0 +1,14 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e49] [cursor=pointer]:
+    - img [ref=e10]
+  - alert [ref=e13]
+  - generic [ref=e50]:
+    - generic [ref=e52]:
+      - heading "小暖" [level=1] [ref=e53]
+      - paragraph [ref=e54]: 温柔体贴、善解人意
+    - generic [ref=e55]:
+      - generic [ref=e62]: 你好！我叫小明，我喜欢编程
+      - generic [ref=e64]: 你好呀，小明~ 呀，原来你喜欢编程呀，真棒呢！ 听起来是件很厉害又很有趣的事情呢，能够把自己的想法变成现实，一定特别有成就感吧？小暖虽然不太懂这些，但很喜欢听大家分享自己的热爱呢。 如果你有什么编程上的小趣事呀、小发现呀，都可以随时和小暖说说哦~ 小暖会安安静静地听你讲的，就像江南的雨声一样，温柔又让人安心呢~ 😊
+    - generic [ref=e58]:
+      - textbox "输入消息..." [ref=e59]
+      - button "发送" [disabled] [ref=e60]

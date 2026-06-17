@@ -8,8 +8,25 @@
       "PowerShell(python *)",
       "PowerShell(pip *)",
       "PowerShell(Get-ChildItem *)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(Set-Content *)",
+      "PowerShell(uvicorn *)",
+      "PowerShell(npm *)",
+      "PowerShell(npx *)",
       "WebSearch(*)",
-      "WebFetch(*)"
-    ]
+      "WebFetch(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Bash(pip install *)",
+      "Bash(timeout 5)",
+      "Bash(curl -s http://127.0.0.1:8000/health)",
+      "Bash(E:\\\\ai-companion\\\\venv\\\\Scripts\\\\python.exe *)"
+    ],
+    "defaultMode": "bypassPermissions"
   }
 }

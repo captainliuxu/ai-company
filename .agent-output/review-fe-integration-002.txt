@@ -1,0 +1,20 @@
+TASK-ID: FE-INTEGRATION-002
+
+Findings
+
+1. High: `error` 态在真实集成链路里不可达，导致本任务要求的错误 UI 实际不会出现。[frontend/src/lib/api.ts](/abs/path/E:/ai-companion/frontend/src/lib/api.ts:153) 到 [frontend/src/lib/api.ts](/abs/path/E:/ai-companion/frontend/src/lib/api.ts:183) 把 `memories` 和 `emotion history` 的所有请求异常都吞掉并返回 `[]`；而 [frontend/src/app/chat/page.tsx](/abs/path/E:/ai-companion/frontend/src/app/chat/page.tsx:103) 到 [frontend/src/app/chat/page.tsx](/abs/path/E:/ai-companion/frontend/src/app/chat/page.tsx:149) 与 [frontend/src/app/chat/page.tsx](/abs/path/E:/ai-companion/frontend/src/app/chat/page.tsx:165) 到 [frontend/src/app/chat/page.tsx](/abs/path/E:/ai-companion/frontend/src/app/chat/page.tsx:193) 只有在 Promise reject 时才设置 `memoryError` / `emotionHistoryError`。结果是 FE-002 里已经写好的错误卡片与重试按钮 [memory-list.tsx](/abs/path/E:/ai-companion/frontend/src/components/chat/memory-list.tsx:100) / [emotion-history.tsx](/abs/path/E:/ai-companion/frontend/src/components/chat/emotion-history.tsx:92) 在真实页面里不会被触发。浏览器里我把两个接口都强制返回 500，页面仍显示 empty 状态，不显示 error。
+
+2. Medium: `InsightPanel` 的响应式策略与聊天页侧栏容器不匹配，桌面端实际出现过窄双列卡片，UI 可读性明显下降。[frontend/src/components/chat/insight-panel.tsx](/abs/path/E:/ai-companion/frontend/src/components/chat/insight-panel.tsx:69) 在 `xl` 断点强制两列；而聊天页把它放进固定 `24rem` 侧栏 [frontend/src/app/chat/page.tsx](/abs/path/E:/ai-companion/frontend/src/app/chat/page.tsx:531)。在 1440px 浏览器验收时，两张卡片被压到大约 160-180px 宽，标题、空态文案、计数都出现重度换行，不符合“桌面端适配良好”的完成标准。
+
+3. Low: 记忆类型标签映射与当前前端类型定义不一致，展示会退化为原始枚举值。[frontend/src/components/chat/memory-list.tsx](/abs/path/E:/ai-companion/frontend/src/components/chat/memory-list.tsx:23) 只映射了 `preference/profile/event/summary/fact`，但当前前端 API 类型是 `user_info | preference | event | emotion | summary` [frontend/src/lib/api.ts](/abs/path/E:/ai-companion/frontend/src/lib/api.ts:30)。这不会阻塞编译，但会让 `user_info`、`emotion` 直接裸显示。
+
+ROUND 1: Static Analysis — FAIL  
+组件拆分、props 设计、loading/empty/error 三态代码都已具备，能满足“可复用组件”的基本方向。未通过原因是响应式断点设计与实际容器不匹配，且记忆类型展示与当前数据模型不同步。
+
+ROUND 2: Runtime Verification — FAIL  
+`npm run build --prefix E:\ai-companion\frontend` 已通过，说明 FE-002 组件可编译、可被当前页面引用。未通过原因是运行时集成假设错误：上游 API 层把失败统一降级成空数组，导致 FE-002 的 error props 在真实链路中不会生效。
+
+ROUND 3: Browser Verification — FAIL  
+`empty` 态已验证通过，移动端和桌面端都能看到记忆列表与情绪时间线的空态卡片。`error` 态验证失败：强制接口 500 后页面仍显示 empty 而不是 error。`responsive` 验证失败：桌面侧栏中的双列布局过窄。`loading` 态源码里有 skeleton，但在当前真实页面流转里未能稳定观察到，因此本轮不能记为通过。
+
+FINAL STATUS: FAILED

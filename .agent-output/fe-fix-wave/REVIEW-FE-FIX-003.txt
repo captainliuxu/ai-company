@@ -1,0 +1,56 @@
+TASK-ID: FE-FIX-003  
+REVIEW-TYPE: DEEPSEEK-3-ROUND-REVIEW  
+STATUS: FAILED
+
+=== ROUND 1: STATIC ANALYSIS ===  
+STATUS: PASS-ROUND-1
+
+- 检查文件: [backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:59), [backend/main.py](/E:/ai-companion/backend/main.py:15)
+- 变更范围符合目标，没有越权扩散到其他后端文件。
+- [backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:59) 把 session 从进程内 `_sessions` 改为 `chat_sessions` 表持久化，`create_chat_session` 与 `send_message` / `emotion` / `history` / `memories` 统一走 `_require_session()`，这正对准了 “创建后立即 send 仍 404” 的根因。
+- [backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:174) 新增 `session persona mismatch` 防护，避免同一 `session_id` 被错误 persona 复用。
+- [backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:218) 后处理改为 `async_session()` 新会话，避免复用流式请求生命周期里的 `db` session。
+- [backend/main.py](/E:/ai-companion/backend/main.py:20) 启动时确保 `chat_sessions` 表存在；[backend/main.py](/E:/ai-companion/backend/main.py:46) 放行 `http://127.0.0.1:3000`，与本次联调目标一致。
+- 未发现本次 diff 内的明显 SQL 注入、响应格式漂移或路由破坏问题。
+
+=== ROUND 2: RUNTIME VERIFICATION ===  
+STATUS: PASS-ROUND-2
+
+运行证据：
+- `GET /api/v1/personas` → `200`
+- `POST /api/v1/chat/session` → `200`, 创建 `session_id = b83a83a1-8828-4d7f-a2cf-1fab7cd9876a`
+- 紧接着 `POST /api/v1/chat/send` → `200`, `Content-Type: text/event-stream; charset=utf-8`
+  证据：返回 SSE 分片文本，最终 `data: {"done": true}`，未出现 `Session not found`
+- 同一 `session_id` 下：
+  - `GET /api/v1/emotion/b83a83a1-8828-4d7f-a2cf-1fab7cd9876a` 立即可访问，先返回 `200` + `"No emotion data yet"`
+  - 等待约 10 秒后再次请求 → `200`，返回同一 `session_id` 的 emotion 数据
+  - `GET /api/v1/emotion/b83a83a1-8828-4d7f-a2cf-1fab7cd9876a/history` → `200`，后续 `history_count = 1`
+  - `GET /api/v1/memories/b83a83a1-8828-4d7f-a2cf-1fab7cd9876a` → `200`，后续 `memories_count = 1`
+- 失败路径回归：
+  - `GET /api/v1/emotion/00000000-0000-0000-0000-000000000000` → `404`
+  - body: `{"success":false,"message":"Session not found","data":null}`
+- CORS 回归：
+  - 携带 `Origin: http://127.0.0.1:3000` 请求 `GET /api/v1/personas` → `200`
+  - 响应头 `Access-Control-Allow-Origin: http://127.0.0.1:3000`
+
+结论：
+- 本次修复目标已在运行时达成。
+- `send` 不再因内存 session 丢失而立即 404。
+- `emotion/history/memories` 对同一 `session_id` 一致可用；emotion 与 memory 为后台任务驱动，表现为“接口立即可用，数据稍后落库”。
+
+=== ROUND 3: BROWSER E2E ===  
+STATUS: FAIL-ROUND-3
+
+发现的问题：
+- [MAJOR | Round 3] 前端 `http://127.0.0.1:3000/personas` 持续停留在 loading spinner，无法完成“角色选择 → 创建会话 → 发送消息 → 查看回复”的必需浏览器链路。证据截图： [review-fe-fix-003-page.png](/E:/ai-companion/review-fe-fix-003-page.png:1)
+- 浏览器网络记录显示前端页面资源加载正常，但没有发出到后端 `/api/v1/personas` 的请求，因此无法在浏览器里闭环验证 FE-FIX-003 用户流程。
+- 作为替代，我在 Swagger UI `http://127.0.0.1:8000/docs` 中确认了相关路由可见且可交互，但这不能替代规定的前端 E2E 用户路径。
+
+影响判断：
+- 这次后端目标修复本身通过了静态和运行时验证。
+- 但按 `docs/AGENT_RULES.md`，第 3 轮浏览器验收必须通过；当前前端运行态阻断了该轮验收，所以整体不能判定为通过。
+
+REVIEW RESULT: FAILED
+
+补充：
+- 依据你的“只读审查，不允许修改任何文件”要求，我没有更新 `docs/ISSUES_LOG.md`。

@@ -1,0 +1,63 @@
+TASK-ID: `FE-FIX-003`  
+REVIEW-TYPE: `DEEPSEEK-3-ROUND-REVIEW`  
+STATUS: `PASSED`
+
+`verify` 规则文件本地缺失，我按 `docs/AGENT_RULES.md` 的要求执行了等效的真实运行验证和浏览器 E2E。全程只读，未修改任何文件。
+
+**ROUND 1: STATIC ANALYSIS**  
+STATUS: `PASS-ROUND-1`
+
+- 审查范围符合要求。本次目标相关后端改动集中在 [backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:59) 和 [backend/main.py](/E:/ai-companion/backend/main.py:20)。
+- `chat.py` 已将 session 从进程内 `_sessions` 改为 SQLite 持久化，关键点在 [backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:59)、[backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:149)、[backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:166)、[backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:325)。
+- `main.py` 在应用启动时创建 `chat_sessions` 表，并补充 `http://127.0.0.1:3000` CORS，关键点在 [backend/main.py](/E:/ai-companion/backend/main.py:20) 和 [backend/main.py](/E:/ai-companion/backend/main.py:46)。
+- 未发现 FE-FIX-003 目标内的阻断问题。针对 “`Session not found`” 的根因，修复方向正确：前端页面跳转或代理请求不再依赖同进程内存态 session。
+
+**ROUND 2: RUNTIME VERIFICATION**  
+STATUS: `PASS-ROUND-2`
+
+实测后端 `http://127.0.0.1:8000`：
+
+- `GET /api/v1/personas` → `200`，成功拿到 `persona_id=29e76c9e-bd51-4299-bcdf-54568a84c24d`
+- `POST /api/v1/chat/session` → `200`，成功创建 `session_id=851dd6f7-fa1f-43a5-b68a-746adda855c5`
+- `POST /api/v1/chat/send` → `200`，`Content-Type: text/event-stream; charset=utf-8`
+- SSE 返回了正常分片文本，不是 `Session not found`
+- `GET /api/v1/emotion/851dd6f7-fa1f-43a5-b68a-746adda855c5` 初次返回 `No emotion data yet`，5 秒后再次查询返回真实情绪数据：
+  - `favorability=65`
+  - `trust=55`
+  - `mood=期待`
+  - `dependency=10`
+- `GET /api/v1/emotion/851dd6f7-fa1f-43a5-b68a-746adda855c5/history` → `200`，`history_count=1`
+- `GET /api/v1/memories/851dd6f7-fa1f-43a5-b68a-746adda855c5` → `200`
+- 失败路径验证：`GET /api/v1/emotion/not-a-real-session` → `404`
+- CORS 预检验证：
+  - `Origin: http://127.0.0.1:3000` → `200`，`Access-Control-Allow-Origin: http://127.0.0.1:3000`
+  - `Origin: http://localhost:3000` → `200`，`Access-Control-Allow-Origin: http://localhost:3000`
+
+**ROUND 3: BROWSER E2E**  
+STATUS: `PASS-ROUND-3`
+
+实测前端 `http://127.0.0.1:3000`，用 `agent-browser` 走完整链路：
+
+- 打开 `/personas` 成功，页面可见“选择你的AI伴侣”
+- 点击“小暖”后成功进入  
+  `http://127.0.0.1:3000/chat?persona_id=29e76c9e-bd51-4299-bcdf-54568a84c24d`
+- 聊天页自动创建 session，网络记录显示：
+  - `POST /api/chat/session` → `200`
+  - `POST /api/chat/send` → `200`
+- 输入“你好，做个简短自我介绍。”后，页面正常显示用户消息和助手回复
+- 本轮未出现前端报错，也未出现 `Session not found` 失败
+- 发送完成后输入框恢复可用，说明流结束并回到可交互状态
+
+证据：
+
+- 截图：[review-fe-fix-004-chat-before-send.png](/E:/ai-companion/review-fe-fix-004-chat-before-send.png)
+- 截图：[review-fe-fix-004-chat-after-send.png](/E:/ai-companion/review-fe-fix-004-chat-after-send.png)
+- 截图：[review-fe-fix-004-insight-panel.png](/E:/ai-companion/review-fe-fix-004-insight-panel.png)
+
+**REVIEW RESULT**
+
+ROUND 1 (Static Analysis): `PASS`  
+ROUND 2 (Runtime Verify): `PASS`  
+ROUND 3 (Browser E2E): `PASS`
+
+结论：`FE-FIX-004` 修复后，目标链路已经打通，前端现在可以完成 `/personas -> 进入 chat -> 创建 session -> 发送消息`，且不再因 `Session not found` 失败。唯一残留观察是本次前端会话发送后洞察面板未立即显示情绪/记忆刷新，但这不影响本次 FE-FIX-003/004 的通过结论。

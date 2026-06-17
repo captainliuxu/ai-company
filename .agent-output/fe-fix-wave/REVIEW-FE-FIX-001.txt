@@ -1,0 +1,79 @@
+TASK-ID: FE-FIX-001  
+REVIEW-TYPE: DEEPSEEK-3-ROUND-REVIEW  
+STATUS: PASSED
+
+自检门禁：
+1. 我是谁：DeepSeek Review Agent
+2. 我的权限边界：只读审查，不修改任何文件，不做调度
+3. 我是否在越权：否。本次仅检查 `frontend/src/lib/api.ts` 与 FE-FIX-001 相关变更
+
+=== ROUND 1: STATIC ANALYSIS ===  
+STATUS: PASS-ROUND-1
+
+检查范围：
+- [frontend/src/lib/api.ts](/E:/ai-companion/frontend/src/lib/api.ts:73)
+- 对照后端响应契约：[backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:373) 和 [backend/api/chat.py](/E:/ai-companion/backend/api/chat.py:403)
+
+结论：
+- 范围合规：本次目标改动仅在 `frontend/src/lib/api.ts`，符合 FE-FIX-001 允许范围。
+- 错误透传成立：`parseApiEnvelope()` 在非 2xx 时直接 `throw`，并在 2xx 但非对象响应时也 `throw`，见 [api.ts](/E:/ai-companion/frontend/src/lib/api.ts:73)。
+- `fetchMemories()` 不再吞错返回 `[]`，而是要求 `data.memories` 为数组，否则 reject，见 [api.ts](/E:/ai-companion/frontend/src/lib/api.ts:188)。
+- `fetchEmotionHistory()` 同样要求 `data.history` 为数组，否则 reject，见 [api.ts](/E:/ai-companion/frontend/src/lib/api.ts:205)。
+- 成功路径未破坏：两函数仍返回稳定的数组类型，元素归一化逻辑独立于错误处理，见 [api.ts](/E:/ai-companion/frontend/src/lib/api.ts:145) 和 [api.ts](/E:/ai-companion/frontend/src/lib/api.ts:128)。
+- 与后端契约一致：后端成功返回 `{ data: { memories: [] } }` / `{ data: { history: [] } }`，失败返回 `404 + { success:false, message:"Session not found", data:null }`，见 [chat.py](/E:/ai-companion/backend/api/chat.py:384) 和 [chat.py](/E:/ai-companion/backend/api/chat.py:417)。
+
+静态审查发现：
+- 无阻断问题。
+- 无明显回归风险落点在本任务范围内。
+
+=== ROUND 2: RUNTIME VERIFICATION ===  
+STATUS: PASS-ROUND-2
+
+验证方式：
+- TypeScript 编译检查：`npm --prefix E:\ai-companion\frontend exec -- tsc --noEmit -p E:\ai-companion\frontend\tsconfig.json` 通过。
+- 最小运行脚本：用 `tsx` 直接导入 `frontend/src/lib/api.ts`，stub `fetch` 验证 Promise 行为。
+
+验证结果：
+- `fetchMemories('s1')` + 200/合法 payload → resolve，返回 1 条记忆。
+- `fetchEmotionHistory('s1')` + 200/合法 payload → resolve，返回 1 条历史。
+- `fetchMemories('bad')` + 404/`{ success:false, message:'Session not found', data:null }` → reject，错误为 `Session not found (404)`。
+- `fetchEmotionHistory('bad-shape')` + 200/`data:null` → reject，错误为 `获取情绪历史失败：响应数据无效`。
+
+关键证据：
+```json
+[
+  ["memories-success", [{"id":"m1","session_id":"s1","type":"user_info","content":"c","importance":4,"created_at":"2026-05-27T00:00:00Z"}]],
+  ["history-success", [{"session_id":"s1","favorability":80,"trust":70,"mood":"happy","dependency":20,"created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:00Z"}]],
+  ["memories-404", "Session not found (404)"],
+  ["history-invalid", "获取情绪历史失败：响应数据无效"]
+]
+```
+
+=== ROUND 3: BROWSER E2E ===  
+STATUS: PASS-ROUND-3
+
+说明：
+- FE-FIX-001 本身没有独立 UI，最接近的浏览器验收证据是浏览器中直接访问 Swagger/API 响应，确认浏览器上下文里的成功与失败 envelope 与第 2 轮 reject 条件一致。
+- 本轮使用 `agent-browser` 而非 Playwright MCP。Playwright MCP 被现有会话占用，但不影响浏览器层验收结论。
+
+浏览器证据：
+- Swagger 可访问：标题为 `AI Companion Pro Demo - Swagger UI`
+- 有效 session：
+  - `GET /api/v1/memories/{session_id}` → `{"success":true,"message":"","data":{"memories":[]}}`
+  - `GET /api/v1/emotion/{session_id}/history` → `{"success":true,"message":"","data":{"history":[]}}`
+- 无效 session：
+  - `GET /api/v1/memories/nonexistent-review-session` → `{"success":false,"message":"Session not found","data":null}`
+  - `GET /api/v1/emotion/nonexistent-review-session/history` → `{"success":false,"message":"Session not found","data":null}`
+
+截图：
+- [review-fe-fix-001-memories-success.png](/E:/ai-companion/review-fe-fix-001-memories-success.png)
+- [review-fe-fix-001-history-success.png](/E:/ai-companion/review-fe-fix-001-history-success.png)
+- [review-fe-fix-001-memories-404.png](/E:/ai-companion/review-fe-fix-001-memories-404.png)
+- [review-fe-fix-001-history-404.png](/E:/ai-companion/review-fe-fix-001-history-404.png)
+
+最终结论：
+- Round 1: PASS ✅
+- Round 2: PASS ✅
+- Round 3: PASS ✅
+
+REVIEW RESULT: PASSED

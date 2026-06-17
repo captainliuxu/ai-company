@@ -13,6 +13,27 @@ Prioritize safe autonomous execution patterns that avoid triggering shell sandbo
 
 ---
 
+# Pre-Flight Checks（启动前必做）
+
+## 0. Read Project Documentation First
+
+**Before executing any project task, the agent MUST:**
+
+1. Read `CLAUDE.md` in the project root — this is the single source of truth for:
+   - Which directories are the real code vs garbage/leftovers
+   - How to start the backend and frontend
+   - Project structure, tech stack, constraints
+
+2. If `CLAUDE.md` references a `PROJECT_PLAN.md` or `TASK_BOARD.md`, read those too.
+
+3. **Never guess which directory is the real project.** `CLAUDE.md` explicitly lists all real directories and flags garbage ones.
+
+**WHY:** Claude sessions have no memory of prior sessions. Without reading the project docs first, the agent will inevitably operate on wrong directories (e.g., a stale scaffold instead of the real app), wasting time on re-development that already exists elsewhere.
+
+**CONSEQUENCE OF SKIPPING:** The agent will start the wrong frontend, edit the wrong files, and force the user to manually correct it — exactly what this rule prevents.
+
+---
+
 # Core Execution Rules
 
 ## 1. Never Use Compound Shell Commands

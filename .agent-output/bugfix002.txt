@@ -1,0 +1,16 @@
+**Summary**
+
+已在 [frontend/src/app/chat/page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:91) 完成 `BUG-FIX-002` 范围内修复，且未修改其他文件。
+
+1. `BUG-002`：把原先“等流结束后再整段做本地打字动画”改成“流到即入队、前端按固定节奏增量吐出”，核心逻辑在 [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:91) 到 [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:178)。现在先显示 typing dots，收到首批 token 后平滑切到逐步增长的回复气泡；流结束后只落库一次到 `messages`，不会再额外重复渲染整段。
+2. `BUG-003`：发送按钮禁用态改为纯灰色，在 [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:334)；空输入和发送中都会明显区别于可点击的橙色态。
+3. `BUG-004`：聊天页顶部增加了固定可见的返回入口，并把异常页的返回入口统一成 `Link`，见 [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:187) 和 [page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx:212)。
+
+**Verification**
+
+1. 运行 `npm run build --prefix E:\ai-companion\frontend`，构建通过。
+2. 构建过程中发现并修复了一个定时器类型问题；最终 Next.js 生产构建和 TypeScript 检查均通过。
+3. 未做真实 SSE 端到端联调，因为本次只允许改前端单文件，且当前回合未启动完整前后端联调环境；不过目标文件的流式消费、禁用态和返回入口逻辑已完成静态验证。
+
+TASK COMPLETED
+STATUS: DONE

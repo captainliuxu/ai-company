@@ -1,0 +1,35 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - heading "选择你的AI伴侣" [level=1] [ref=e14]
+    - paragraph [ref=e15]: Choose your companion
+    - generic [ref=e16]:
+      - generic [ref=e17] [cursor=pointer]:
+        - heading "小暖" [level=2] [ref=e18]
+        - paragraph [ref=e19]: 温柔体贴、善解人意
+        - paragraph [ref=e20]: 软糯温和、多用语气词
+      - generic [ref=e21] [cursor=pointer]:
+        - heading "小锐" [level=2] [ref=e22]
+        - paragraph [ref=e23]: 理性毒舌、一针见血但不冷漠
+        - paragraph [ref=e24]: 直接利落、偶尔带刺但不伤人
+      - generic [ref=e25] [cursor=pointer]:
+        - heading "小默" [level=2] [ref=e26]
+        - paragraph [ref=e27]: 安静沉稳、话少但每句有分量
+        - paragraph [ref=e28]: 简洁、不说废话
+  - generic [active]:
+    - menu "Next.js Dev Tools Items" [ref=e29]:
+      - generic [ref=e30]:
+        - menuitem "Route Static" [ref=e31] [cursor=pointer]:
+          - generic [ref=e32]: Route
+          - generic [ref=e33]: Static
+        - generic "Turbopack is enabled." [ref=e34]:
+          - generic [ref=e35]: Bundler
+          - generic [ref=e36]: Turbopack
+        - menuitem "Route Info" [ref=e37]:
+          - generic [ref=e38]: Route Info
+          - img [ref=e40]
+      - menuitem "Preferences" [ref=e43]:
+        - generic [ref=e44]: Preferences
+        - img [ref=e46]
+    - button "Close Next.js Dev Tools" [expanded] [ref=e48] [cursor=pointer]:
+      - img [ref=e10]
+  - alert [ref=e13]

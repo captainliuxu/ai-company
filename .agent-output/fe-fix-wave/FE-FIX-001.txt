@@ -1,0 +1,6 @@
+在 [frontend/src/lib/api.ts](E:/ai-companion/frontend/src/lib/api.ts) 内做了 `FE-FIX-001` 的最小修改，且未触碰授权范围外文件。`fetchMemories()` 和 `fetchEmotionHistory()` 现在不仅会在非 200、无效 envelope、缺少数组字段时抛错，也会在数组里出现畸形项时直接 `reject`，不再通过 `filter(... !== null)` 把异常响应伪装成空数组。成功路径返回类型保持不变，`fetchPersonas`、`createSession`、`fetchEmotion`、`sendMessage` 未改动行为。
+
+验证结果：已运行 `npm exec --prefix E:\ai-companion\frontend -- tsc --noEmit --project E:\ai-companion\frontend\tsconfig.json`，通过。
+
+TASK COMPLETED
+STATUS: DONE

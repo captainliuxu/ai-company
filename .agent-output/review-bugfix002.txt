@@ -1,0 +1,52 @@
+TASK-ID: `BUG-FIX-002`  
+SCOPE: `frontend/src/app/chat/page.tsx`  
+ROLE CHECK:
+1. 我是谁？`Review Agent R2`
+2. 权限边界？`只读审查，不修改代码/文档，不调度其他 Agent`
+3. 是否越权？`否`
+
+ROUND 1: STATIC ANALYSIS — `PASS`
+- 变更范围符合任务约束：实际功能性改动集中在 [frontend/src/app/chat/page.tsx](E:\ai-companion\frontend\src\app\chat\page.tsx)。
+- `BUG-002`：新增 `pendingReplyRef` + `typingTimerRef` + `streamDoneRef`，把 SSE token 先缓存再按节奏刷到 UI，能把原始流式响应转成明显可感知的逐步输出。
+- `BUG-003`：发送按钮禁用态已从橙色语义切到灰色语义：`disabled:bg-gray-500 disabled:hover:bg-gray-500 disabled:cursor-not-allowed`。
+- `BUG-004`：顶部新增常驻返回入口 `Link href="/personas"`，聊天页内可直接回角色列表。
+- 回归检查：
+  - 没有改动 `frontend/src/lib/api.ts` 或 `backend/api/chat.py` 的接口契约。
+  - 现有消息列表、自动滚动、typing indicator、错误横幅仍在。
+  - 未发现回复结束后“再追加一整段重复消息”的静态迹象。
+
+ROUND 2: RUNTIME VERIFICATION — `PASS`
+- 使用运行中的后端 `http://127.0.0.1:8000/api/v1` 验证。
+- `GET /personas` → `200`，返回 `3` 个角色。
+- `POST /chat/session` → `200`，成功创建会话。
+- `POST /chat/send` → `200`，SSE 不是整段一次返回，实际观测到多段 `data: {"text": ...}`：
+  - `4404ms` 第一段文本
+  - `4430ms` 第二段文本
+  - `4438ms` 第三段文本
+  - `4599ms` `{"done": true}`
+- 这说明后端仍在真实流式发送，未被本任务破坏。
+- 情绪接口链路未回归：`GET /emotion/{session_id}` → `200`。
+
+ROUND 3: BROWSER E2E — `PASS`
+- 由于现有 `3000` dev 实例存在 HMR 握手异常，浏览器验收改用同代码的独立生产实例 `http://127.0.0.1:3100`。
+- 可见流式：
+  - 聊天页发送后，前 `~5.0s` 仅显示 typing/loading。
+  - `5283ms` 开始出现助手回复前缀。
+  - `5546ms`、`5810ms`、`6074ms`、`6342ms` 文本持续增长。
+  - `6610ms` 后文本稳定，未观察到结束后再重复追加整段。
+- 禁用态按钮颜色：
+  - 空输入时按钮 `disabled=true`，计算样式为中性灰 `lab(47.7841 -0.393212 -10.0268)`。
+  - 有输入时按钮恢复橙色 `lab(70.0429 42.5156 75.8207)`。
+  - 灰色/橙色区分明显，满足 `BUG-003`。
+- 返回导航：
+  - 聊天页顶部存在“返回角色选择”入口。
+  - 点击后成功返回 `/personas`，角色卡片正常可见。
+- 交互回归：
+  - 发送后输入框会禁用。
+  - 回复结束后输入框恢复可用。
+  - 未见布局或响应式明显破坏。
+
+FINAL STATUS: `PASSED`
+
+备注：
+- `3000` 上原有 dev server 处于异常状态，表现为 HMR WebSocket 握手失败并卡在 Suspense fallback；这不构成对 `BUG-FIX-002` 本身的失败判定，因为同一代码在独立 `3100` 实例下通过了完整浏览器验收。

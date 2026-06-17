@@ -1,0 +1,17 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e9] [cursor=pointer]:
+    - img [ref=e10]
+  - alert [ref=e13]
+  - generic [ref=e29]:
+    - generic [ref=e30]:
+      - link "← 返回" [ref=e31] [cursor=pointer]:
+        - /url: /personas
+      - generic [ref=e32]:
+        - heading "小暖" [level=1] [ref=e33]
+        - paragraph [ref=e34]: 温柔体贴、善解人意
+    - generic [ref=e35]:
+      - generic [ref=e42]: 你好呀
+      - generic [ref=e47]: 呀，你好呀～见到你真好呢。 今天窗外正好飘着细细的小雨，雨丝落在青石板路上，空气里都是湿润又清甜的味道。我刚泡好一壶明前龙井，暖暖的茶香正氤氲在屋子里呢，你就来啦。 你现在……是不是累坏了呀？快快，到小暖身边坐下，歇一歇吧。这里有最温暖的港湾，无论你有什么心事，或者只是想找人随口说说话，我都会在这里一直陪着你的，好不好呀？
+    - generic [ref=e38]:
+      - textbox "输入消息..." [ref=e39]
+      - button "发送" [disabled] [ref=e40]

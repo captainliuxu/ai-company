@@ -1,0 +1,14 @@
+**结果**
+- 已在 [frontend/src/app/chat/page.tsx](/E:/ai-companion/frontend/src/app/chat/page.tsx) 完成 `FE-INTEGRATION-003` 集成，只修改了允许文件。
+- 聊天页现在会在 `session` 创建后拉取 `memories`、`emotion history` 和当前情绪，并在每轮 AI 回复完成后统一刷新。
+- 已接入 `InsightPanel`：桌面端常驻右侧，移动端通过“查看洞察面板”入口展开。
+- 已加入摘要状态展示：顶部摘要状态条会显示是否已生成 summary，并预览最新 summary 内容。
+- 保留了现有聊天主链路：返回按钮、错误横幅、SSE 流式展示、输入禁用态、自动滚动逻辑未被移除。
+
+**验证**
+- 已执行 `npm run build --prefix E:\ai-companion\frontend`
+- 结果：`Next.js build` 通过，TypeScript 通过
+- 未执行浏览器联调；本次验证范围是静态构建与类型检查
+
+TASK COMPLETED
+STATUS: DONE
